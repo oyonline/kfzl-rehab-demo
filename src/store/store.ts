@@ -136,13 +136,16 @@ export function addUpload(taskId: string, filename: string, sizeLabel: string, p
   write({ ...s, uploads: [...s.uploads, upload], checkIns })
 }
 
+/** 返回新消息 id，供打字机效果定位当前正在输出的那条 */
 export function addMessage(msg: Omit<ChatMessage, 'id' | 'at' | 'patientId'>) {
   const s = read()
   const at = new Date()
+  const id = nextId('msg', at)
   write({
     ...s,
-    messages: [...s.messages, { ...msg, id: nextId('msg', at), at: at.toISOString(), patientId: PATIENT_ID }],
+    messages: [...s.messages, { ...msg, id, at: at.toISOString(), patientId: PATIENT_ID }],
   })
+  return id
 }
 
 export function addGuidance(text: string, therapistName: string, aboutTaskId?: string, aboutDate?: string) {

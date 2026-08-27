@@ -1,8 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
-import { patient, therapist } from '../../data/seed'
+import { patient, taskDefs, therapist } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
+import { ThinkingTrace, useTypewriter, type TraceStep } from '../../components/ThinkingTrace'
+
+function StreamingBody({ text, onDone }: { text: string; onDone: () => void }) {
+  const shown = useTypewriter(text, true, onDone)
+  const lines = shown.split('\n')
+  return (
+    <>
+      {lines.map((line, i) => (
+        <RichText key={i} text={line + (i === lines.length - 1 && shown.length < text.length ? '▍' : '')} />
+      ))}
+    </>
+  )
+}
 
 /** **加粗** 的极简渲染，避免为一处强调引入 markdown 依赖 */
 function RichText({ text }: { text: string }) {
@@ -10,29 +23,54 @@ function RichText({ text }: { text: string }) {
   return <p>{parts.map((s, i) => (i % 2 ? <strong key={i}>{s}</strong> : s))}</p>
 }
 
+/**
+ * 依据步骤 —— 只写系统真实使用的东西。
+ * 档案与康复师确认计划确实是回答的来源（也就是答案下方那排"依据"标签）；
+ * 安全边界确实在起作用（超出范围会走转康复师）。没有检索层，因此不写"检索知识库"。
+ */
+function traceFor(q: PresetQA | null): TraceStep[] {
+  return [
+    { label: '读取康复档案', detail: `${patient.name} · ${patient.diagnosis.strokeType} · ${patient.diagnosis.stage}` },
+    { label: '结合康复师确认的计划', detail: `${patient.assessments[0].date} 制定，含今日 ${taskDefs.length} 项安排` },
+    {
+      label: '按安全边界组织回答',
+      detail: q?.escalateHint ?? '超出可安全回答范围的部分交回康复师',
+    },
+  ]
+}
+
 export function ChatView() {
   const state = useDemoState()
   const [draft, setDraft] = useState('')
+  const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null } | null>(null)
+  const [streamingId, setStreamingId] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const messages = state.messages
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages.length])
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages.length, trace, streamingId])
 
   function reply(q: PresetQA | null, asked: string) {
     addMessage({ role: 'family', text: asked })
-    const a = q ?? FALLBACK_ANSWER
-    window.setTimeout(() => {
-      addMessage({
-        role: 'ai',
-        text: a.answer.join('\n'),
-        answerSource: 'preset_fallback',
-        basis: a.basis,
-        escalated: a.escalate,
-      })
-    }, 420)
+    setTrace({ steps: traceFor(q), qa: q })
   }
 
-  const unasked = PRESET_QA.filter((q) => !messages.some((m) => m.role === 'family' && m.text === q.question))
+  /** 依据过程走完后才产生回答，并逐字输出 */
+  const onTraceDone = useCallback(() => {
+    if (!trace) return
+    const a = trace.qa ?? FALLBACK_ANSWER
+    const id = addMessage({
+      role: 'ai',
+      text: a.answer.join('\n'),
+      answerSource: 'preset_fallback',
+      basis: a.basis,
+      escalated: a.escalate,
+    })
+    setStreamingId(id)
+    setTrace(null)
+  }, [trace])
+
+  const busy = trace !== null || streamingId !== null
+  const unasked = busy ? [] : PRESET_QA.filter((q) => !messages.some((m) => m.role === 'family' && m.text === q.question))
 
   return (
     <section className="card card-pad chat">
@@ -74,16 +112,18 @@ export function ChatView() {
                       : <><span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答</>}
                   </div>
                 )}
-                {m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
+                {m.id === streamingId
+                  ? <StreamingBody text={m.text} onDone={() => setStreamingId(null)} />
+                  : m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
 
-                {!isMe && m.basis && (
+                {!isMe && m.basis && m.id !== streamingId && (
                   <div className="basis">
                     <b>依据</b>
                     {m.basis.map((b) => <span className="chip" key={b} style={{ padding: '2px 9px' }}>{b}</span>)}
                   </div>
                 )}
 
-                {!isMe && m.escalated && (() => {
+                {!isMe && m.escalated && m.id !== streamingId && (() => {
                   const asked = messages.find((x) => x.role === 'family' && x.at < m.at)
                   const question = [...messages].reverse().find((x) => x.role === 'family' && x.at <= m.at)?.text ?? asked?.text ?? ''
                   const sent = state.escalations.some((e) => e.question === question)
@@ -105,6 +145,7 @@ export function ChatView() {
             </div>
           )
         })}
+        {trace && <ThinkingTrace steps={trace.steps} onDone={onTraceDone} />}
         <div ref={endRef} />
       </div>
 

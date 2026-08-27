@@ -611,3 +611,28 @@
   border-top-left-radius: 6px;
 }
 .bub-av-th { background: var(--green-700); color: #fff; font-size: var(--t-sm); font-weight: 650; }
+
+/* ---------------- 依据过程 ---------------- */
+
+.spin {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid var(--green-100); border-top-color: var(--green-700);
+  animation: spin .7s linear infinite;
+}
+.spin-sm { width: 11px; height: 11px; border-width: 2px; }
+@keyframes spin { to { transform: rotate(360deg) } }
+
+.trace { min-width: 340px; }
+.trace-step { display: flex; gap: 11px; padding: 7px 0; align-items: flex-start; }
+.trace-dot {
+  width: 18px; height: 18px; border-radius: 50%; flex: none; margin-top: 2px;
+  display: grid; place-items: center;
+  background: var(--surface-3); color: var(--ink-4);
+  transition: background .2s, color .2s;
+}
+.trace-step[data-state='done'] .trace-dot { background: var(--ok); color: #fff; }
+.trace-step[data-state='doing'] .trace-dot { background: transparent; }
+.trace-l { font-size: var(--t-sm); font-weight: 600; color: var(--ink-3); transition: color .2s; }
+.trace-step[data-state='done'] .trace-l,
+.trace-step[data-state='doing'] .trace-l { color: var(--ink); }
+.trace-d { font-size: var(--t-xs); color: var(--ink-3); margin-top: 2px; animation: fade .3s ease; }
