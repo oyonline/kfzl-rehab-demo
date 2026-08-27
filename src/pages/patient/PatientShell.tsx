@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { currentSession, signOut } from '../../auth/auth'
 import { patient, toISODate, videos } from '../../data/seed'
 import { setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
-import { IconActivity, IconCalendar, IconChat, IconCheck, IconClock, IconLeaf, IconPill, IconPlay, IconUtensils } from '../../components/Icons'
+import { IconActivity, IconCalendar, IconChat, IconCheck, IconClock, IconFile, IconLeaf, IconPill, IconPlay, IconUtensils } from '../../components/Icons'
+import { ProfileDrawer } from '../../components/ProfileDrawer'
 import '../../styles/app.css'
 
 export function PatientShell() {
   const nav = useNavigate()
   const state = useDemoState()
   const session = currentSession()
+  const [profileOpen, setProfileOpen] = useState(false)
   const today = toISODate(new Date())
   const rows = todayCheckIns(state, today)
 
@@ -55,6 +58,10 @@ export function PatientShell() {
             <Fact k="主要照护人" v={`${patient.caregiver.name} · ${patient.caregiver.relation}`} />
             <Fact k="下次复评" v={patient.goals.nextReviewDate} />
           </dl>
+
+          <button className="link-more" onClick={() => setProfileOpen(true)}>
+            <IconFile /> 查看完整档案
+          </button>
         </aside>
 
         <div className="stack">
@@ -164,6 +171,7 @@ export function PatientShell() {
         </div>
       </main>
 
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   )
 }

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { currentSession, signOut } from '../../auth/auth'
 import { patient, taskDefs, therapist, toISODate } from '../../data/seed'
 import { addGuidance, todayCheckIns, useDemoState } from '../../store/store'
-import { IconCheck, IconClock, IconLeaf, IconSend } from '../../components/Icons'
+import { IconCheck, IconClock, IconFile, IconLeaf, IconSend } from '../../components/Icons'
+import { ProfileDrawer } from '../../components/ProfileDrawer'
 import '../../styles/app.css'
 
 /**
@@ -17,6 +18,7 @@ export function TherapistShell() {
   const today = toISODate(new Date())
   const rows = todayCheckIns(state, today)
   const [draft, setDraft] = useState('')
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const total = rows.length
   const done = rows.filter((r) => r.checkIn?.status === 'done').length
@@ -79,7 +81,12 @@ export function TherapistShell() {
                   {patient.diagnosis.strokeType} · {patient.diagnosis.stage} · 发病 {patient.diagnosis.onsetDate}
                 </p>
               </div>
-              <span className="chip chip-brand">下次复评 {patient.goals.nextReviewDate}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+                <span className="chip chip-brand">下次复评 {patient.goals.nextReviewDate}</span>
+                <button className="btn-quiet" onClick={() => setProfileOpen(true)}>
+                  <IconFile size={14} /> 完整档案
+                </button>
+              </div>
             </div>
 
             <div className="stats">
@@ -198,6 +205,8 @@ export function TherapistShell() {
           </section>
         </div>
       </main>
+
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   )
 }

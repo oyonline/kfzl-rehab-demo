@@ -1,5 +1,7 @@
 /**
  * 双端共用数据契约 —— 冻结于 2026-08-27。
+ * 2026-08-27 扩展：新增 Admission / CareEvent 与 Patient 的档案字段，
+ * 用于"完整档案"抽屉（两端共用组件）。属新增字段，不改动既有字段语义。
  *
  * 依据 KB `ANXIN_REHAB_DEMO` 当前权威 v0.2 §7.1 理由 2：
  * 老人端与康复师端共用同一份结构，不先冻结则 9/3 拼联动会拼不上。
@@ -60,6 +62,29 @@ export interface Assessment {
   visibleToFamily: boolean
 }
 
+/** 住院与出院记录 —— 叙述性场景信息，不含需专业判断的数值 */
+export interface Admission {
+  admittedOn: ISODate
+  dischargedOn: ISODate
+  facility: string
+  department: string
+  chiefComplaint: string
+  admissionDiagnosis: string[]
+  course: string
+  dischargeStatus: string
+  dischargeOrders: string[]
+}
+
+export type CareEventKind = 'admission' | 'inpatient' | 'discharge' | 'homecare' | 'assessment' | 'upcoming'
+
+/** 诊疗与照护经过时间线 */
+export interface CareEvent {
+  date: ISODate
+  kind: CareEventKind
+  title: string
+  detail: string
+}
+
 export interface Patient {
   id: string
   name: string
@@ -87,6 +112,14 @@ export interface Patient {
     shortTerm: string[]
     nextReviewDate: ISODate
   }
+  /** 入院与出院记录 */
+  admission: Admission
+  /** 诊疗与照护经过 */
+  careEvents: CareEvent[]
+  emergencyContact: { name: string; relation: string; phoneMasked: string }
+  assistiveDevices: string[]
+  communication: string
+  pastHistory: string[]
   origin: DataOrigin
 }
 

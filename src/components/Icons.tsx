@@ -37,3 +37,10 @@ export const IconClock = ({ size = 14 }: P) => (
 export const IconUtensils = ({ size = 18 }: P) => (
   <svg {...base(size)}><path d="M3 2v7a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2M6 2v20M18 2c-1.5 2-2 4-2 6 0 2 1 3 2 3s2-1 2-3c0-2-.5-4-2-6ZM18 11v11" /></svg>
 )
+
+export const IconClose = ({ size = 17 }: P) => (
+  <svg {...base(size)}><path d="M18 6 6 18M6 6l12 12" /></svg>
+)
+export const IconFile = ({ size = 15 }: P) => (
+  <svg {...base(size)}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6M9 13h6M9 17h4" /></svg>
+)

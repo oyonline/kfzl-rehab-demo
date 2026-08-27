@@ -43,15 +43,48 @@ export const patient: Patient = {
     },
   ],
   assessments: [
-    { name: '洼田饮水试验', value: '待专业确认', level: '待专业确认', date: '2026-08-20', assessor: '康复师', note: '量表分级与解释须由专业人员确认', visibleToFamily: true },
-    { name: 'MMSE 简易智能量表', value: '待专业确认', date: '2026-08-20', assessor: '康复师', note: '同上', visibleToFamily: false },
-    { name: 'MMT 徒手肌力测试', value: '待专业确认', date: '2026-08-20', assessor: '康复师', note: '同上', visibleToFamily: true },
-    { name: 'Braden 压疮风险', value: '待专业确认', date: '2026-08-20', assessor: '护理', note: '同上', visibleToFamily: false },
+    { name: '洼田饮水试验', value: '待专业确认', level: '待专业确认', date: '2026-08-20', assessor: '王秀兰', note: '量表分级与解释须由专业人员确认', visibleToFamily: true },
+    { name: 'MMSE 简易智能量表', value: '待专业确认', date: '2026-08-20', assessor: '王秀兰', note: '同上', visibleToFamily: false },
+    { name: 'MMT 徒手肌力测试', value: '待专业确认', date: '2026-08-20', assessor: '王秀兰', note: '同上', visibleToFamily: true },
+    { name: 'Braden 压疮风险', value: '待专业确认', date: '2026-08-20', assessor: '护理组', note: '同上', visibleToFamily: false },
   ],
   goals: {
     shortTerm: ['床边坐位保持延长至 10 分钟', '进食呛咳次数减少', '每日按时服用降压药'],
     nextReviewDate: '2026-09-20',
   },
+
+  admission: {
+    admittedOn: '2026-06-14',
+    dischargedOn: '2026-06-28',
+    facility: '三级综合医院',
+    department: '神经内科',
+    chiefComplaint: '晨起后右侧肢体无力伴言语含糊 3 小时',
+    admissionDiagnosis: ['缺血性脑卒中（左侧基底节区）', '高血压 2 级（很高危）', '2 型糖尿病'],
+    course: '入院后予溶栓禁忌评估、抗血小板聚集及脑保护治疗，血压血糖控制平稳；病情稳定后由康复科会诊介入，床旁开始良肢位摆放与被动关节活动。住院 14 天，右侧肢体肌力较入院时改善，可在辅助下完成床边坐起。',
+    dischargeStatus: '神志清楚，生命体征平稳。右侧肢体活动较入院改善，仍需辅助转移；进食稀液时偶有呛咳。',
+    dischargeOrders: [
+      '继续口服降压与降糖药物，定期监测血压血糖',
+      '转居家康复，由康复师制定并调整训练计划',
+      '进食注意食物性状调整，警惕误吸',
+      '每月复评一次，如出现新发无力、意识改变立即就医',
+    ],
+  },
+
+  careEvents: [
+    { date: '2026-06-14', kind: 'admission', title: '发病入院', detail: '晨起后右侧肢体无力伴言语含糊 3 小时，由家属送至急诊，收入神经内科。' },
+    { date: '2026-06-15', kind: 'inpatient', title: '康复科会诊介入', detail: '病情稳定后开始床旁良肢位摆放与被动关节活动，预防关节挛缩与压疮。' },
+    { date: '2026-06-28', kind: 'discharge', title: '出院转居家康复', detail: '住院 14 天，右侧肢体肌力较入院改善，可辅助下床边坐起，转居家康复继续训练。' },
+    { date: '2026-07-02', kind: 'homecare', title: '居家康复建档', detail: '康复师上门完成首次入户评估，建立个人康复档案与家庭照护指导。' },
+    { date: '2026-07-20', kind: 'assessment', title: '第 1 阶段复评', detail: '完成阶段性评估，训练计划由被动活动过渡到主动辅助训练。' },
+    { date: '2026-08-20', kind: 'assessment', title: '第 2 阶段复评', detail: '进入居家康复第 3 阶段，新增坐位平衡与吞咽训练。' },
+    { date: '2026-09-20', kind: 'upcoming', title: '下次复评', detail: '评估坐位耐受时间与吞咽功能改善情况，据此调整下一阶段计划。' },
+  ],
+
+  emergencyContact: { name: '李敏', relation: '女儿', phoneMasked: '138****6721' },
+  assistiveDevices: ['四脚拐（室内短距离）', '防滑坐便椅', '床边护栏'],
+  communication: '意识清楚，简单指令可执行；表达略迟缓，需放慢语速并给足反应时间。',
+  pastHistory: ['高血压 2 级，病史约 12 年，长期口服降压药', '2 型糖尿病，病史约 6 年，饮食联合口服药控制', '否认药物过敏史'],
+
   origin: 'synthetic',
 }
 
