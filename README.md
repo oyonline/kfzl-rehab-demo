@@ -15,8 +15,8 @@ npm run dev
 
 | 入口 | 本地地址 | 账号 | 密码 |
 |---|---|---|---|
-| 老人 / 家属端 | `http://localhost:5173/patient` | `jiashu` | `123456` |
-| 康复师端 | `http://localhost:5173/therapist` | `kangfu` | `123456` |
+| 老人 / 家属端 | `http://localhost:5173/patient` | `limin` | `123456` |
+| 康复师端 | `http://localhost:5173/therapist` | `wangxiulan` | `123456` |
 
 登录仅账号密码，无验证码、无扫码、无第三方授权。表单已预填，现场无需手动输入。
 

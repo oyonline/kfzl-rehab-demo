@@ -13,8 +13,8 @@ interface Account {
 }
 
 const ACCOUNTS: Account[] = [
-  { username: 'jiashu', password: '123456', role: 'family', displayName: '李敏（女儿）' },
-  { username: 'kangfu', password: '123456', role: 'therapist', displayName: '王秀兰' },
+  { username: 'limin', password: '123456', role: 'family', displayName: '李敏（女儿）' },
+  { username: 'wangxiulan', password: '123456', role: 'therapist', displayName: '王秀兰' },
 ]
 
 const KEY = 'kfzl.session.v1'
@@ -66,6 +66,6 @@ export function signOut() {
 }
 
 export const DEMO_CREDENTIALS = {
-  family: { username: 'jiashu', password: '123456' },
-  therapist: { username: 'kangfu', password: '123456' },
+  family: { username: 'limin', password: '123456' },
+  therapist: { username: 'wangxiulan', password: '123456' },
 }
