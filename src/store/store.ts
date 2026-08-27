@@ -240,8 +240,8 @@ const GRACE_MIN = 90
 /**
  * 任务的实际状态 —— 两端必须用同一个判定，否则家属端与康复师端会各说各话。
  *
- * 计划时间 + 宽限 90 分钟仍未打卡即视为未完成。演示时钟接入后（9/1–9/3）
- * 把 now 换成时钟时间即可，无需改判定逻辑。
+ * 计划时间 + 宽限 90 分钟仍未打卡即视为未完成，按真实时间计算。
+ * （演示时钟方案已于 2026-08-27 由用户撤销，本判定不依赖它。）
  */
 export function effectiveStatus(task: TaskDef, checkIn: CheckIn | undefined, now = new Date()): CheckInStatus {
   if (checkIn?.status === 'done' || checkIn?.status === 'difficulty' || checkIn?.status === 'missed') {
