@@ -566,3 +566,24 @@
 .ptable tbody tr[data-open='false'] { color: var(--ink-3); }
 .ptable tbody tr[data-open='false'] .who-dot { background: var(--surface-3); color: var(--ink-3); }
 .ptable a.btn-quiet { text-decoration: none; }
+
+/* ---------------- 指导列表 ---------------- */
+
+.glist { display: grid; gap: 12px; }
+.grow {
+  display: flex; align-items: center; gap: 18px;
+  padding: 20px 22px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid rgba(231,225,216,.7); box-shadow: var(--sh-1);
+  transition: transform .16s, box-shadow .18s, border-color .16s;
+}
+.grow:hover { transform: translateX(3px); box-shadow: var(--sh-2); border-color: var(--green-300); }
+.grow-ico {
+  width: 46px; height: 46px; border-radius: 14px; flex: none;
+  background: var(--green-50); color: var(--green-700);
+  display: grid; place-items: center;
+}
+.grow-t { display: block; font-size: var(--t-md); font-weight: 640; }
+.grow-s { display: block; font-size: var(--t-sm); color: var(--ink-3); margin-top: 3px; }
+.grow-m { display: flex; gap: 8px; margin-top: 10px; }
+.grow-go { color: var(--ink-4); flex: none; display: grid; place-items: center; }
+.grow:hover .grow-go { color: var(--green-700); }

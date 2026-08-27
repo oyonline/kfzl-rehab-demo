@@ -53,6 +53,13 @@ src/pages/therapist/ 康复师端
 
 家属端顶部导航四项：`/patient`（今日）、`/patient/chat`（康复咨询）、`/patient/calendar`（打卡日历）、`/patient/guidance`（饮食与健康）。
 
+内容页统一走**列表 → 详情**：
+
+```
+/patient/videos            训练视频列表      → /patient/videos/:id
+/patient/guidance          饮食与健康列表    → /patient/guidance/:id
+```
+
 训练视频**不占顶部导航**：从今日安排的任务卡点「示范视频」进入 `/patient/videos/:id`，或从今日安排标题旁的「全部训练视频」进入 `/patient/videos`。入口跟着任务走，符合“点开任务节点播放示范视频”的原始要求。
 
 康复师端是**三层结构**，工作台级导航只放工作台级入口，患者内的分页放在详情页里：

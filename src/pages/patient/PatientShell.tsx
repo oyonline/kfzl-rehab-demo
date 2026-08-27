@@ -8,6 +8,7 @@ import { TodayView } from './TodayView'
 import { ChatView } from './ChatView'
 import { CheckinCalendar } from '../../components/CheckinCalendar'
 import { GuidanceView } from './GuidanceView'
+import { GuidanceDetailView } from './GuidanceDetailView'
 import { VideoLibraryView } from './VideoLibraryView'
 import { VideoDetailView } from './VideoDetailView'
 import '../../styles/app.css'
@@ -82,6 +83,7 @@ export function PatientShell() {
           <Route path="chat" element={<ChatView />} />
           <Route path="calendar" element={<CheckinCalendar />} />
           <Route path="guidance" element={<GuidanceView />} />
+          <Route path="guidance/:id" element={<GuidanceDetailView />} />
         </Routes>
       </main>
 

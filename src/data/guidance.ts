@@ -12,6 +12,8 @@ export interface GuidanceCard {
   items: string[]
   /** 需要立即联系专业人员的情况 */
   alert?: string
+  /** 关联的训练视频，详情页给出跳转 */
+  relatedVideoId?: string
 }
 
 export const GUIDANCE: GuidanceCard[] = [
@@ -27,6 +29,7 @@ export const GUIDANCE: GuidanceCard[] = [
       '食物与水的性状调整由康复师根据吞咽评估确定，请勿自行更改',
     ],
     alert: '呛咳后出现气促、发热或痰量明显增多，请立即联系康复师',
+    relatedVideoId: 'v-swallow',
   },
   {
     id: 'diet',
@@ -62,5 +65,6 @@ export const GUIDANCE: GuidanceCard[] = [
       '常用物品放在健侧手可及的高度，避免踮脚或弯腰取物',
       '转移时使用四脚拐并有人在旁保护',
     ],
+    relatedVideoId: 'v-transfer',
   },
 ]
