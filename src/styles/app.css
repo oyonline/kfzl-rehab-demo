@@ -232,16 +232,6 @@
 .tbl tbody tr { transition: background .14s; }
 .tbl tbody tr:hover { background: var(--surface-2); }
 
-.bars { display: flex; align-items: flex-end; gap: 12px; height: 116px; }
-.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 9px; height: 100%; justify-content: flex-end; }
-.bar {
-  width: 100%; max-width: 46px; border-radius: 7px 7px 3px 3px;
-  background: linear-gradient(var(--green-600), var(--green-700));
-  transition: height .4s cubic-bezier(.2,.8,.2,1);
-}
-.bar[data-partial='true'] { background: linear-gradient(var(--clay-500), var(--clay-700)); }
-.bar-k { font-size: 11px; color: var(--ink-4); letter-spacing: .04em; }
-
 .ta {
   width: 100%; padding: 15px 17px; border-radius: var(--r);
   border: 1px solid var(--line-2); background: var(--surface-2);

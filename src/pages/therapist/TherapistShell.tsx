@@ -5,9 +5,9 @@ import { PATIENT_ID, patient, roster, therapist, toISODate } from '../../data/se
 import { effectiveStatus, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
 import { IconAlert, IconFile, IconLeaf } from '../../components/Icons'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
+import { CheckinCalendar } from '../../components/CheckinCalendar'
 import { FollowupView } from './FollowupView'
 import { ConsultView } from './ConsultView'
-import { AdherenceView } from './AdherenceView'
 import { GuidanceLogView } from './GuidanceLogView'
 import '../../styles/app.css'
 
@@ -97,7 +97,7 @@ export function TherapistShell() {
         <Routes>
           <Route index element={<FollowupView />} />
           <Route path="consult" element={<ConsultView />} />
-          <Route path="adherence" element={<AdherenceView />} />
+          <Route path="adherence" element={<CheckinCalendar />} />
           <Route path="guidance" element={<GuidanceLogView />} />
         </Routes>
       </main>
