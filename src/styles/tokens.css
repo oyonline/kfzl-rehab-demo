@@ -1,91 +1,102 @@
 /**
  * 设计系统 —— 居家康复智能助手
  *
- * 基调：暖纸背景 + 深松绿主色。适老场景要"温暖可信"，不要冷灰的后台感。
- * 两端同一套色，靠背景温度与信息密度区分气质：
- *   老人/家属端 = 暖、大字、疏朗；康复师端 = 冷、紧凑、专业。
+ * 基调：专业、温和、可信的康养医疗风格。
+ * 深青绿为主色；暖白与浅灰承载页面和卡片；克制圆角、阴影与装饰。
  *
- * 不引入任何外部字体或 CDN —— 现场网络不可控，断网也必须好看。
+ * **颜色是语义，不是装饰**：
+ *   深青绿 = 品牌与已完成
+ *   中性灰 = 常规状态（未到时间的待办属正常，不着色）
+ *   橙     = 提醒 / 即将开始
+ *   红     = 异常（漏做、需就医、需立即处理）
+ * 除此之外不得引入新的强调色。
+ *
+ * 不引入任何外部字体或 CDN —— 现场网络不可控，断网也必须完整呈现。
  */
 
 :root {
-  /* 中性 —— 带一点暖，避免死灰 */
-  --paper: #fbf9f6;
+  /* 背景：暖白 + 浅灰 */
+  --paper: #fbfaf8;
   --surface: #ffffff;
-  --surface-2: #f6f3ee;
-  --surface-3: #efeae2;
-  --line: #e7e1d8;
-  --line-2: #d8d0c4;
+  --surface-2: #f2f3f2;
+  --surface-3: #e7e9e8;
+  --line: #e2e5e3;
+  --line-2: #cbd1ce;
 
-  --ink: #1c1f1d;
-  --ink-2: #55605b;
-  --ink-3: #8b948f;
-  --ink-4: #b4bcb7;
+  /* 文字：提高对比度 */
+  --ink: #14201e;
+  --ink-2: #3d4a47;
+  --ink-3: #5c6764;   /* 正文次级，实测对比 ≥ 5.5 */
+  --ink-4: #6a7571;   /* 最弱一档也须过 AA 4.5（实测 4.53），原 #909a96 只有 2.78 */
 
-  /* 主色：深松绿 */
-  --green-900: #0b3a32;
-  --green-700: #0e5c50;
-  --green-600: #147364;
-  --green-300: #7fb8ac;
-  --green-100: #dcebe7;
-  --green-50: #eef6f4;
+  /* 主色：深青绿 */
+  --teal-900: #09332f;
+  --teal-800: #0c4540;
+  --teal-700: #115c55;
+  --teal-600: #16736a;
+  --teal-300: #78b0a8;
+  --teal-100: #d5e7e4;
+  --teal-50: #edf5f3;
 
-  /* 暖辅色：陶土橙，用于"待办 / 提醒" */
-  --clay-700: #a45c26;
-  --clay-500: #c4763a;
-  --clay-100: #f7e8db;
+  /* 兼容旧变量名 */
+  --green-900: var(--teal-900);
+  --green-700: var(--teal-700);
+  --green-600: var(--teal-600);
+  --green-300: var(--teal-300);
+  --green-100: var(--teal-100);
+  --green-50: var(--teal-50);
 
   /* 语义 */
-  --ok: #2f7d5c;
-  --ok-bg: #e4f1ea;
-  --wait: #b07b2c;
-  --wait-bg: #f8ecd8;
-  --miss: #a8483f;
-  --miss-bg: #f6e5e3;
+  --ok: #17664f;
+  --ok-bg: #e4f0ea;
+  --wait: #99601a;          /* 提醒 / 即将开始 */
+  --wait-bg: #fbf0de;
+  --miss: #9d332b;          /* 异常 */
+  --miss-bg: #f8e8e6;
 
-  /* 圆角 */
-  --r-sm: 8px;
-  --r: 14px;
-  --r-lg: 20px;
+  --clay-700: var(--wait);
+  --clay-500: #b3742c;
+  --clay-100: var(--wait-bg);
+
+  /* 克制的圆角 */
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 12px;
   --r-pill: 999px;
 
-  /* 阴影：三层，靠柔和大范围投影拉开层次，不用边框堆 */
-  --sh-1: 0 1px 2px rgba(28, 31, 29, .04);
-  --sh-2: 0 2px 4px rgba(28, 31, 29, .04), 0 8px 24px -8px rgba(28, 31, 29, .10);
-  --sh-3: 0 4px 8px rgba(28, 31, 29, .05), 0 20px 48px -16px rgba(28, 31, 29, .16);
+  /* 克制的阴影：以 1px 描边为主，阴影只做极轻的层次提示 */
+  --sh-1: none;
+  --sh-2: 0 1px 2px rgba(20, 32, 30, .04);
+  --sh-3: 0 1px 3px rgba(20, 32, 30, .06), 0 6px 16px -10px rgba(20, 32, 30, .14);
 
-  /* 字号阶梯 */
   --t-xs: 12px;
   --t-sm: 13px;
   --t-base: 15px;
   --t-md: 17px;
   --t-lg: 20px;
-  --t-xl: 26px;
-  --t-2xl: 34px;
-  --t-3xl: 44px;
+  --t-xl: 25px;
+  --t-2xl: 32px;
+  --t-3xl: 40px;
 
   --bg: var(--paper);
 }
 
-/* 老人／家属端：字更大、行距更松、背景更暖 */
+/* 老人／家属端：字更大、行距更松 */
 [data-skin='warm'] {
   --t-xs: 13px;
   --t-sm: 14px;
   --t-base: 17px;
   --t-md: 19px;
-  --t-lg: 23px;
-  --t-xl: 30px;
-  --t-2xl: 38px;
-  --bg: var(--paper);
+  --t-lg: 22px;
+  --t-xl: 28px;
+  --t-2xl: 35px;
 }
 
-/* 康复师端：偏冷、紧凑 */
+/* 康复师端：更紧凑，背景偏中性灰 */
 [data-skin='cool'] {
-  --paper: #f4f6f7;
-  --surface-2: #eef1f3;
-  --surface-3: #e5e9ec;
-  --line: #e0e5e8;
-  --line-2: #ccd4d8;
+  --paper: #f5f6f6;
+  --surface-2: #eff1f0;
+  --surface-3: #e4e7e6;
   --bg: var(--paper);
 }
 
@@ -99,8 +110,8 @@ body {
   color: var(--ink);
   font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, system-ui, sans-serif;
   font-size: var(--t-base);
-  line-height: 1.62;
-  letter-spacing: .01em;
+  line-height: 1.65;
+  letter-spacing: .005em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -111,5 +122,4 @@ a { color: inherit; text-decoration: none; }
 h1, h2, h3, p, dl, dd, ul { margin: 0; padding: 0; }
 ul { list-style: none; }
 
-/* 数字统一等宽，避免跳动 */
 .num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }

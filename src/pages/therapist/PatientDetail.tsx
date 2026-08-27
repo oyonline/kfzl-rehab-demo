@@ -42,7 +42,7 @@ export function PatientDetail() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className={`chip ${done >= rows.length ? 'chip-ok' : 'chip-wait'} num`}>今日 {done}/{rows.length}</span>
+          <span className={`chip ${done >= rows.length ? 'chip-ok' : ''} num`}>今日 {done}/{rows.length}</span>
           <span className="chip chip-brand">下次复评 {patient.goals.nextReviewDate}</span>
           <button className="btn-quiet" onClick={() => setProfileOpen(true)}><IconFile size={14} /> 完整档案</button>
         </div>

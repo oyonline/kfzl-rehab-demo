@@ -69,17 +69,21 @@ export function PatientListView() {
                 </td>
                 <td style={{ color: 'var(--ink-2)' }}>{r.stage}</td>
                 <td>
-                  <span className={`chip ${r.todayDone >= r.todayTotal ? 'chip-ok' : 'chip-wait'} num`}>
+                  <span className={`chip ${r.todayDone >= r.todayTotal ? 'chip-ok' : ''} num`}>
                     {r.todayDone}/{r.todayTotal}
                   </span>
                 </td>
                 <td>
                   <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {r.flag && (
-                      <span className="chip chip-miss">
-                        {r.flag.includes('咨询') ? <IconChat size={11} /> : <IconAlert size={11} />} {r.flag}
-                      </span>
-                    )}
+                    {r.flag && (() => {
+                      // 红色只用于异常：漏做属异常；待回复咨询与训练困难属提醒
+                      const abnormal = r.flag.includes('未完成')
+                      return (
+                        <span className={`chip ${abnormal ? 'chip-miss' : 'chip-wait'}`}>
+                          {r.flag.includes('咨询') ? <IconChat size={11} /> : <IconAlert size={11} />} {r.flag}
+                        </span>
+                      )
+                    })()}
                     {r.hasUpload && <span className="chip chip-brand"><IconPlay size={10} /> 视频回传</span>}
                     {!r.flag && !r.hasUpload && <span style={{ color: 'var(--ink-4)' }}>—</span>}
                   </span>

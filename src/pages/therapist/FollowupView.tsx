@@ -64,7 +64,7 @@ export function FollowupView() {
                   {status === 'done' && <span className="chip chip-ok"><IconCheck size={10} /> 已完成</span>}
                   {status === 'difficulty' && <span className="chip chip-wait"><IconAlert size={11} /> 反馈困难</span>}
                   {status === 'missed' && <span className="chip chip-miss">未完成</span>}
-                  {status === 'pending' && <span className="chip chip-wait"><IconClock size={11} /> 待完成</span>}
+                  {status === 'pending' && <span className="chip"><IconClock size={11} /> 待完成</span>}
                 </td>
                 <td className="num" style={{ textAlign: 'right', color: 'var(--ink-3)' }}>
                   {checkIn?.at ? new Date(checkIn.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '—'}

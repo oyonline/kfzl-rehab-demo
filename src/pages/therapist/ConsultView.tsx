@@ -19,7 +19,7 @@ export function ConsultView() {
           <div>
             <div className="eyebrow">待处理</div>
             <h2 className="card-title">
-              转来的咨询{pending.length > 0 && <span className="chip chip-miss" style={{ marginLeft: 10 }}>{pending.length}</span>}
+              转来的咨询{pending.length > 0 && <span className="chip chip-wait" style={{ marginLeft: 10 }}>{pending.length}</span>}
             </h2>
           </div>
           <span className="card-note">AI 无法安全回答或家属主动转人工的问题</span>

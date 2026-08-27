@@ -16,7 +16,7 @@ export function InboxView() {
           <div>
             <div className="eyebrow">待处理</div>
             <h1 className="card-title" style={{ fontSize: 'var(--t-xl)' }}>
-              待回复咨询{pending.length > 0 && <span className="chip chip-miss" style={{ marginLeft: 10 }}>{pending.length}</span>}
+              待回复咨询{pending.length > 0 && <span className="chip chip-wait" style={{ marginLeft: 10 }}>{pending.length}</span>}
             </h1>
           </div>
           <span className="card-note">AI 无法安全回答，或家属主动转人工的问题</span>

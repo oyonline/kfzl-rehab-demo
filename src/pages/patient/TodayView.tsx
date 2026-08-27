@@ -141,9 +141,11 @@ export function TodayView() {
                     )}
                     {(status === 'pending' || status === 'missed') && (
                       <>
-                        <span className={`chip ${status === 'missed' ? 'chip-miss' : 'chip-wait'}`}>
-                          {status === 'missed' ? '未完成' : <><IconClock size={11} /> 待完成</>}
-                        </span>
+                        {status === 'missed'
+                          ? <span className="chip chip-miss">未完成</span>
+                          : isNext
+                            ? <span className="chip chip-wait"><IconClock size={11} /> 即将开始</span>
+                            : <span className="chip">待完成</span>}
                         <button className="btn-quiet" onClick={() => { setTroubleFor(troubleFor === task.id ? null : task.id); setNote('') }}>
                           遇到困难
                         </button>

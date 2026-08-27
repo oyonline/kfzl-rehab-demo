@@ -162,7 +162,7 @@ export function CheckinCalendar() {
                         ? <span className="chip chip-wait">已反馈困难</span>
                         : status === 'missed'
                           ? <span className="chip chip-miss">未完成</span>
-                          : <span className="chip chip-wait">待完成</span>}
+                          : <span className="chip">待完成</span>}
                   </td>
                 </tr>
               ))}
