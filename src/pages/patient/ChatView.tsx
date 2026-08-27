@@ -54,12 +54,26 @@ export function ChatView() {
 
         {messages.map((m) => {
           const isMe = m.role === 'family'
+          const isTherapist = m.role === 'therapist'
           const q = PRESET_QA.find((x) => x.answer.join('\n') === m.text)
           const hint = q?.escalateHint ?? FALLBACK_ANSWER.escalateHint
           return (
             <div className="bub-row" data-me={isMe} key={m.id}>
-              {!isMe && <span className="bub-av"><IconChat size={17} /></span>}
-              <div className={`bub ${isMe ? 'bub-me' : 'bub-ai'}`}>
+              {/* 必须一眼分清 AI 与康复师：产品主张是 AI 不取代专业人员，
+                  两者外观相同的话这条主张在界面上就不成立 */}
+              {!isMe && (
+                <span className={`bub-av${isTherapist ? ' bub-av-th' : ''}`}>
+                  {isTherapist ? therapist.name[0] : <IconChat size={17} />}
+                </span>
+              )}
+              <div className={`bub ${isMe ? 'bub-me' : isTherapist ? 'bub-th' : 'bub-ai'}`}>
+                {!isMe && (
+                  <div className="bub-who">
+                    {isTherapist
+                      ? <><span className="bub-tag bub-tag-th">康复师</span>{therapist.name} · {therapist.title}</>
+                      : <><span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答</>}
+                  </div>
+                )}
                 {m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
 
                 {!isMe && m.basis && (

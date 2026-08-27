@@ -55,13 +55,18 @@ export function ConsultView() {
               return (
                 <div className="bub-row" data-me={isFamily} key={m.id}>
                   {!isFamily && (
-                    <span className="bub-av" style={m.role === 'therapist' ? undefined : { background: 'var(--surface-3)', color: 'var(--ink-2)' }}>
+                    <span className={`bub-av${m.role === 'therapist' ? ' bub-av-th' : ''}`}
+                          style={m.role === 'therapist' ? undefined : { background: 'var(--surface-3)', color: 'var(--ink-2)' }}>
                       {m.role === 'therapist' ? therapist.name[0] : <IconChat size={16} />}
                     </span>
                   )}
-                  <div className={`bub ${isFamily ? 'bub-me' : 'bub-ai'}`}>
-                    <div style={{ fontSize: 'var(--t-xs)', opacity: .7, marginBottom: 5 }}>
-                      {isFamily ? patient.caregiver.name : m.role === 'therapist' ? `${therapist.name} 康复师` : 'AI 助手'}
+                  <div className={`bub ${isFamily ? 'bub-me' : m.role === 'therapist' ? 'bub-th' : 'bub-ai'}`}>
+                    <div className="bub-who">
+                      {isFamily
+                        ? patient.caregiver.name
+                        : m.role === 'therapist'
+                          ? <><span className="bub-tag bub-tag-th">康复师</span>{therapist.name}</>
+                          : <><span className="bub-tag">AI</span>智能助手</>}
                       {' · '}
                       {new Date(m.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
