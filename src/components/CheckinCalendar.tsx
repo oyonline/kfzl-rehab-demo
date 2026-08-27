@@ -1,57 +1,81 @@
-import { useState } from 'react'
-import { taskDefs, toISODate } from '../data/seed'
+import { useMemo, useState } from 'react'
+import { HOMECARE_START, taskDefs, toISODate } from '../data/seed'
 import { effectiveStatus, useDemoState } from '../store/store'
-import { IconCheck } from './Icons'
+import { IconCheck, IconChevron } from './Icons'
 
 const WEEK = ['日', '一', '二', '三', '四', '五', '六']
 
-type State = 'out' | 'future' | 'full' | 'partial' | 'none'
+/** norecord = 建档前或尚无记录的日子，必须与 none（有安排但一项没做）区分开 */
+type State = 'out' | 'future' | 'full' | 'partial' | 'none' | 'norecord'
 
 /** 打卡日历 —— 两端共用，保证家属与康复师看到的是同一套判定 */
 export function CheckinCalendar() {
   const state = useDemoState()
   const today = new Date()
   const todayKey = toISODate(today)
+  const [view, setView] = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [selected, setSelected] = useState<string | null>(todayKey)
 
-  const y = today.getFullYear()
-  const m = today.getMonth()
-  const first = new Date(y, m, 1)
-  const lead = first.getDay()
-  const daysInMonth = new Date(y, m + 1, 0).getDate()
-  const total = taskDefs.length
+  /** 可翻阅的最早月份：居家康复建档当月 */
+  const startKey = HOMECARE_START
+  const start = new Date(startKey)
+  const minIdx = start.getFullYear() * 12 + start.getMonth()
+  const maxIdx = today.getFullYear() * 12 + today.getMonth()
+  const viewIdx = view.y * 12 + view.m
+  const canPrev = viewIdx > minIdx
+  const canNext = viewIdx < maxIdx
+  const isThisMonth = viewIdx === maxIdx
 
-  const cells: { key: string; day: number; state: State }[] = []
-  for (let i = 0; i < lead; i++) {
-    const d = new Date(y, m, i - lead + 1)
-    cells.push({ key: toISODate(d), day: d.getDate(), state: 'out' })
+  function step(d: number) {
+    const i = Math.min(maxIdx, Math.max(minIdx, viewIdx + d))
+    setView({ y: Math.floor(i / 12), m: i % 12 })
+    setSelected(null)
   }
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(y, m, day)
-    const key = toISODate(d)
-    let st: State
-    if (key > todayKey) st = 'future'
-    else {
-      const done = state.checkIns.filter((c) => c.date === key && c.status === 'done').length
-      st = done >= total ? 'full' : done === 0 ? 'none' : 'partial'
+
+  const { cells, tracked, allDone } = useMemo(() => {
+    const { y, m } = view
+    const lead = new Date(y, m, 1).getDay()
+    const days = new Date(y, m + 1, 0).getDate()
+    const total = taskDefs.length
+    const out: { key: string; day: number; state: State; done: number }[] = []
+
+    for (let i = 0; i < lead; i++) {
+      const d = new Date(y, m, i - lead + 1)
+      out.push({ key: toISODate(d), day: d.getDate(), state: 'out', done: 0 })
     }
-    cells.push({ key, day, state: st })
-  }
-  while (cells.length % 7 !== 0) {
-    const d = new Date(y, m, daysInMonth + (cells.length % 7))
-    cells.push({ key: toISODate(d), day: d.getDate(), state: 'out' })
-  }
-
-  const monthDone = cells.filter((c) => c.state === 'full').length
-  const tracked = cells.filter((c) => c.state === 'full' || c.state === 'partial' || c.state === 'none').length
+    for (let day = 1; day <= days; day++) {
+      const key = toISODate(new Date(y, m, day))
+      const hits = state.checkIns.filter((c) => c.date === key)
+      const done = hits.filter((c) => c.status === 'done').length
+      let st: State
+      let d = done
+      if (key > todayKey) st = 'future'
+      else if (key < startKey) st = 'norecord'
+      else if (key === todayKey) {
+        // 今天必须与今日页同一判定，否则两处会各说各话
+        const eff = taskDefs.map((t) => effectiveStatus(t, hits.find((c) => c.taskId === t.id)))
+        d = eff.filter((x) => x === 'done').length
+        st = d >= total ? 'full' : d === 0 ? 'none' : 'partial'
+      } else if (hits.length === 0) st = 'norecord'
+      else st = done >= total ? 'full' : done === 0 ? 'none' : 'partial'
+      out.push({ key, day, state: st, done: d })
+    }
+    while (out.length % 7 !== 0) {
+      const d = new Date(y, m, days + (out.length % 7))
+      out.push({ key: toISODate(d), day: d.getDate(), state: 'out', done: 0 })
+    }
+    const t = out.filter((c) => ['full', 'partial', 'none'].includes(c.state))
+    return { cells: out, tracked: t.length, allDone: t.filter((c) => c.state === 'full').length }
+  }, [view, state.checkIns, todayKey, startKey])
 
   const detail = selected
     ? taskDefs.map((t) => {
         const hit = state.checkIns.find((c) => c.date === selected && c.taskId === t.id)
         const status = selected === todayKey ? effectiveStatus(t, hit) : hit?.status ?? 'missed'
-        return { task: t, status }
+        return { task: t, status, hasRecord: !!hit }
       })
     : []
+  const selectedHasRecord = detail.some((d) => d.hasRecord) || selected === todayKey
 
   return (
     <div className="stack">
@@ -59,15 +83,30 @@ export function CheckinCalendar() {
         <div className="card-hd">
           <div>
             <div className="eyebrow">坚持记录</div>
-            <h2 className="card-title">{y} 年 {m + 1} 月</h2>
+            <h2 className="card-title num">{view.y} 年 {view.m + 1} 月</h2>
           </div>
-          <span className="card-note num">本月全部完成 {monthDone} / {tracked} 天</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span className="card-note num">本月全部完成 {allDone} / {tracked} 天</span>
+            <div className="mnav">
+              <button onClick={() => step(-1)} disabled={!canPrev} aria-label="上个月">
+                <span style={{ transform: 'rotate(180deg)', display: 'grid' }}><IconChevron size={15} /></span>
+              </button>
+              <button onClick={() => step(1)} disabled={!canNext} aria-label="下个月">
+                <IconChevron size={15} />
+              </button>
+            </div>
+            {!isThisMonth && (
+              <button className="btn-quiet" onClick={() => { setView({ y: today.getFullYear(), m: today.getMonth() }); setSelected(todayKey) }}>
+                回到本月
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="cal-hd">{WEEK.map((w) => <span key={w}>{w}</span>)}</div>
         <div className="cal">
           {cells.map((c, i) => {
-            const clickable = c.state !== 'out' && c.state !== 'future'
+            const clickable = ['full', 'partial', 'none'].includes(c.state)
             return (
               <div
                 className="cell"
@@ -81,7 +120,7 @@ export function CheckinCalendar() {
                 <span className="cell-d num">{c.day}</span>
                 <span className="cell-mark">
                   {c.state === 'full' && <IconCheck size={12} />}
-                  {c.state === 'partial' && <span className="num">缺 {total - state.checkIns.filter((x) => x.date === c.key && x.status === 'done').length}</span>}
+                  {c.state === 'partial' && <span className="num">缺 {taskDefs.length - c.done}</span>}
                   {c.state === 'none' && <span>未完成</span>}
                 </span>
               </div>
@@ -93,11 +132,12 @@ export function CheckinCalendar() {
           <span><i style={{ background: 'var(--ok-bg)' }} />全部完成</span>
           <span><i style={{ background: 'var(--wait-bg)' }} />部分完成</span>
           <span><i style={{ background: 'var(--miss-bg)' }} />未完成</span>
+          <span><i style={{ background: 'var(--surface-2)' }} />无记录</span>
           <span><i style={{ background: 'transparent', border: '1px dashed var(--line-2)' }} />未到</span>
         </div>
       </section>
 
-      {selected && (
+      {selected && selectedHasRecord && (
         <section className="card card-pad">
           <div className="card-hd">
             <h2 className="card-title" style={{ fontSize: 'var(--t-md)' }}>

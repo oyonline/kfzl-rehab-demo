@@ -422,6 +422,9 @@
 .cell[data-state='full'] { background: var(--ok-bg); }
 .cell[data-state='partial'] { background: var(--wait-bg); }
 .cell[data-state='none'] { background: var(--miss-bg); }
+/* 无记录 ≠ 未完成：建档前或当天没有任何安排记录，不能刷成红色 */
+.cell[data-state='norecord'] { background: var(--surface-2); }
+.cell[data-state='norecord'] .cell-d { color: var(--ink-4); font-weight: 500; }
 .cell[data-today='true'] { border-color: var(--green-600); box-shadow: 0 0 0 3px var(--green-50); }
 .cell[data-clickable='true']:hover { transform: translateY(-2px); box-shadow: var(--sh-2); cursor: pointer; }
 .cell[data-selected='true'] { border-color: var(--green-700); box-shadow: 0 0 0 3px var(--green-100); }
@@ -636,3 +639,14 @@
 .trace-step[data-state='done'] .trace-l,
 .trace-step[data-state='doing'] .trace-l { color: var(--ink); }
 .trace-d { font-size: var(--t-xs); color: var(--ink-3); margin-top: 2px; animation: fade .3s ease; }
+
+
+/* 月份翻页 */
+.mnav { display: flex; gap: 2px; }
+.mnav button {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: grid; place-items: center; color: var(--ink-2);
+  transition: background .15s, color .15s;
+}
+.mnav button:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.mnav button:disabled { color: var(--ink-4); cursor: not-allowed; }

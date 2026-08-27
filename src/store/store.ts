@@ -13,7 +13,7 @@ import type { CheckIn, CheckInStatus, ChatMessage, DemoState, Escalation, Guidan
 import { PATIENT_ID, buildHistory, taskDefs, toISODate } from '../data/seed'
 
 const KEY = 'kfzl.demo.v1'
-const SCHEMA_VERSION = 3  // 2026-08-27 新增 escalations，旧数据自动重置
+const SCHEMA_VERSION = 4  // 2026-08-27 打卡历史改为覆盖到建档日，旧数据自动重置
 
 function initialState(): DemoState {
   return {

@@ -201,6 +201,9 @@ export const taskDefs: TaskDef[] = [
 
 /* ---------- 历史打卡：为打卡日历提供演示数据 ---------- */
 
+/** 居家康复建档日 —— 打卡历史与日历可翻阅范围的起点 */
+export const HOMECARE_START: ISODate = '2026-07-02'
+
 export function toISODate(d: Date): ISODate {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -209,16 +212,24 @@ export function toISODate(d: Date): ISODate {
 }
 
 /**
- * 生成过去 N 天的打卡历史。
- * 用固定模式而非随机数，保证每次演示看到的日历完全一致（可排练）。
- * 模式：每 7 天缺 1 项，每 11 天缺 2 项，其余全完成。
+ * 生成从居家康复建档日到昨天的打卡历史。
+ *
+ * 必须覆盖到建档日，不能只回溯固定天数：否则日历往前翻会出现一段"既非无记录、
+ * 也非未完成"的空档，与今日页的判定对不上（08-27 实测踩到）。
+ *
+ * 用固定模式而非随机数，保证每次演示看到的日历完全一致，可反复排练。
+ * 模式按距今天数取模：每 7 天缺 1 项，每 11 天缺 2 项，其余全完成。
  */
-export function buildHistory(today: Date, days = 28): CheckIn[] {
+export function buildHistory(today: Date, fromISO: ISODate = HOMECARE_START): CheckIn[] {
   const out: CheckIn[] = []
-  for (let back = days; back >= 1; back--) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - back)
-    const date = toISODate(d)
+  const from = new Date(fromISO)
+  const cursor = new Date(from)
+  const end = new Date(today)
+  end.setDate(end.getDate() - 1)
+
+  while (cursor <= end) {
+    const date = toISODate(cursor)
+    const back = Math.round((today.getTime() - cursor.getTime()) / 86400000)
     const missCount = back % 11 === 0 ? 2 : back % 7 === 0 ? 1 : 0
     taskDefs.forEach((t, idx) => {
       const missed = idx >= taskDefs.length - missCount
@@ -231,6 +242,7 @@ export function buildHistory(today: Date, days = 28): CheckIn[] {
         at: missed ? undefined : `${date}T${t.scheduledTime}:00`,
       })
     })
+    cursor.setDate(cursor.getDate() + 1)
   }
   return out
 }
