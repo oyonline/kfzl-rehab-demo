@@ -639,3 +639,17 @@
 }
 .mnav button:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
 .mnav button:disabled { color: var(--ink-4); cursor: not-allowed; }
+
+/* 人写的多行文本：逐行渲染，保留原始换行 */
+.lines p + p { margin-top: 5px; }
+.lines-sm { font-size: var(--t-sm); }
+.lines-ink2 { color: var(--ink-2); margin-top: 6px; }
+
+/* 父容器是 grid，用 justify-self；align-self 在这里不会收窄宽度 */
+.msg-more {
+  justify-self: start;
+  padding: 8px 14px; border-radius: var(--r-pill);
+  border: 1px solid var(--line-2); color: var(--ink-2);
+  font-size: var(--t-sm); transition: background .15s, border-color .15s;
+}
+.msg-more:hover { background: var(--teal-50); border-color: var(--teal-300); color: var(--teal-700); }

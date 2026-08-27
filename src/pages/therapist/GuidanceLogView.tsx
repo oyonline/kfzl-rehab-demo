@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { patient, therapist } from '../../data/seed'
 import { addGuidance, useDemoState } from '../../store/store'
 import { IconSend } from '../../components/Icons'
+import { Lines } from '../../components/Lines'
 
 export function GuidanceLogView() {
   const state = useDemoState()
@@ -42,7 +43,7 @@ export function GuidanceLogView() {
           <ul style={{ display: 'grid', gap: 10 }}>
             {list.map((g) => (
               <li key={g.id} style={{ padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 'var(--r)' }}>
-                <div style={{ fontSize: 'var(--t-sm)' }}>{g.text}</div>
+                <Lines text={g.text} className="lines-sm" />
                 <div style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-4)', marginTop: 6 }}>
                   {new Date(g.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   {' · '}

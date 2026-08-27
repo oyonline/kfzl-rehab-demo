@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { patient, therapist, toISODate, videos } from '../../data/seed'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
 import { IconActivity, IconAlert, IconCheck, IconClock, IconPill, IconPlay } from '../../components/Icons'
+import { Lines } from '../../components/Lines'
 
 export function TodayView() {
   const state = useDemoState()
@@ -10,6 +11,7 @@ export function TodayView() {
   const rows = todayCheckIns(state, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
   const [troubleFor, setTroubleFor] = useState<string | null>(null)
   const [note, setNote] = useState('')
+  const [showAllMsgs, setShowAllMsgs] = useState(false)
 
   // 打开今日页即视为看过康复师的留言，康复师端据此显示"家属已读"
   useEffect(() => { markAllGuidanceRead() }, [state.guidances.length])
@@ -60,20 +62,26 @@ export function TodayView() {
         </div>
       </section>
 
+      {/* 只完整展示最新一条：留言会累积，两条长留言就能把「今日安排」挤出首屏 */}
       {guidances.length > 0 && (
         <div className="stack" style={{ gap: 12 }}>
-          {guidances.map((g) => (
+          {(showAllMsgs ? guidances : guidances.slice(0, 1)).map((g) => (
             <article className="msg" key={g.id}>
               <span className="msg-avatar">{g.therapistName[0]}</span>
               <div>
                 <div className="msg-who">{g.therapistName} 康复师</div>
-                <div className="msg-body">{g.text}</div>
+                <Lines className="msg-body" text={g.text} />
                 <div className="msg-time">
                   {new Date(g.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             </article>
           ))}
+          {guidances.length > 1 && (
+            <button className="msg-more" onClick={() => setShowAllMsgs(!showAllMsgs)}>
+              {showAllMsgs ? '收起早前留言' : `还有 ${guidances.length - 1} 条康复师留言`}
+            </button>
+          )}
         </div>
       )}
 

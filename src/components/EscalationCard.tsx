@@ -3,6 +3,7 @@ import { patient, taskDefs, therapist } from '../data/seed'
 import { answerEscalation } from '../store/store'
 import type { Escalation } from '../data/types'
 import { IconAlert, IconSend } from './Icons'
+import { Lines } from './Lines'
 
 /** 待处理咨询卡 —— 全局待处理页与患者咨询页共用 */
 export function EscalationCard({ esc }: { esc: Escalation }) {
@@ -20,7 +21,7 @@ export function EscalationCard({ esc }: { esc: Escalation }) {
         </span>
       </div>
 
-      <div className="esc-q">{esc.question}</div>
+      <Lines className="esc-q" text={esc.question} />
 
       <div className="basis" style={{ marginTop: 10 }}>
         <b>上下文</b>
