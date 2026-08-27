@@ -60,9 +60,13 @@ export function CheckinCalendar() {
       else st = done >= total ? 'full' : done === 0 ? 'none' : 'partial'
       out.push({ key, day, state: st, done: d })
     }
+    // 补足末行：偏移必须从 1 递增。曾误用 out.length % 7 作偏移，
+    // 8 月排到第 37 格时 37 % 7 = 2，于是从次月 2 号补起，1 号被跳过。
+    let tail = 1
     while (out.length % 7 !== 0) {
-      const d = new Date(y, m, days + (out.length % 7))
+      const d = new Date(y, m, days + tail)
       out.push({ key: toISODate(d), day: d.getDate(), state: 'out', done: 0 })
+      tail++
     }
     const t = out.filter((c) => ['full', 'partial', 'none'].includes(c.state))
     return { cells: out, tracked: t.length, allDone: t.filter((c) => c.state === 'full').length }
