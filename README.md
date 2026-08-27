@@ -39,13 +39,18 @@ npm run dev
 
 ```
 src/data/types.ts    双端共用数据契约（已冻结，改动须两端同步）
-src/data/seed.ts     虚构案例、任务计划、视频清单、打卡历史
+src/data/seed.ts     虚构案例、入院记录、任务计划、视频清单、打卡历史
+src/data/qa.ts       咨询预设答案 ⚠️ 待专业审核
+src/data/guidance.ts 饮食与健康指导 ⚠️ 待专业审核
 src/store/store.ts   localStorage + 跨标签页订阅
 src/auth/auth.ts     账号密码登录（sessionStorage）
 src/styles/          设计令牌与组件样式
-src/pages/patient/   老人 / 家属端
+src/components/      图标、完整档案抽屉、登录守卫
+src/pages/patient/   老人 / 家属端：今日、康复咨询、打卡日历、饮食与健康
 src/pages/therapist/ 康复师端
 ```
+
+家属端四个页面：`/patient`（今日）、`/patient/chat`、`/patient/calendar`、`/patient/guidance`。
 
 打卡历史用固定模式生成而非随机数，保证每次演示看到的日历完全一致，可反复排练。
 
@@ -57,6 +62,21 @@ src/pages/therapist/ 康复师端
 - 不得出现"已由医生确认""已真实接入""已同步医院系统"等冒充生产事实的措辞；
 - 真实病历原件与直接身份信息不得进入本仓。
 
-## 待补素材
+## 待补素材与待审内容
 
-训练示范视频（下肢/坐位、吞咽、翻身转移）尚未到位，当前为占位。视频文件、病例范本与康复师标准问答口径到位后填入 `src/data/seed.ts`。
+### ⚠️ 上台前必须由康复专业人员审核
+
+以下两个文件是本项目起草的医疗性内容，**未经专业审核不得用于正式演示**：
+
+| 文件 | 内容 | 状态 |
+|---|---|---|
+| `src/data/qa.ts` | 咨询预设答案（呛咳、训练做不动、血压偏高）与自由提问兜底 | REVIEW REQUIRED |
+| `src/data/guidance.ts` | 饮食与健康指导四张卡片 | REVIEW REQUIRED |
+
+起草时遵循的保守原则：不给具体剂量、不改变食物性状比例、不调整训练强度，一律引导"记录 + 观察 + 联系康复师"，每条都带明确的升级条件。康复师审核后直接改写内容并删除文件头部的 REVIEW 标记。
+
+### 素材
+
+- 训练示范视频（坐位/下肢、吞咽、翻身转移）尚未到位，当前为占位，到位后填入 `src/data/seed.ts` 的 `videos[].src`；
+- 评估量表分值（洼田饮水、MMSE、MMT、Braden）由康复师评估后填入 `assessments[].value`，当前档案页显示为「待录入」；
+- 用药剂量同样待专业人员提供，当前只显示药名与服用时间。
