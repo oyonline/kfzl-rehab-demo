@@ -7,7 +7,7 @@
  * - 视频素材未到位（死线 9/1），当前全部为 placeholder，禁止冒充自有内容。
  */
 
-import type { Patient, TaskDef, VideoAsset, Therapist, CheckIn, ISODate } from './types'
+import type { Patient, TaskDef, VideoAsset, Therapist, CheckIn, ISODate, RosterEntry } from './types'
 
 export const PATIENT_ID = 'p-001'
 
@@ -93,6 +93,20 @@ export const therapist: Therapist = {
   name: '王秀兰',
   title: '主管康复治疗师',
 }
+
+/**
+ * 康复师的在管患者。只有 PATIENT_ID 有完整档案与实时数据，
+ * 其余仅呈现服务规模，不可点开 —— 不为演示编造第二份病例。
+ */
+export const roster: RosterEntry[] = [
+  { id: PATIENT_ID, name: '陈桂芳', gender: '女', ageBand: '85 岁', stage: '居家康复第 3 阶段', todayDone: 0, todayTotal: 4 },
+  { id: 'p-002', name: '周德海', gender: '男', ageBand: '78 岁', stage: '居家康复第 2 阶段', todayDone: 3, todayTotal: 3 },
+  { id: 'p-003', name: '孙玉兰', gender: '女', ageBand: '81 岁', stage: '居家康复第 4 阶段', todayDone: 2, todayTotal: 4, flag: '连续 2 天未完成' },
+  { id: 'p-004', name: '马长顺', gender: '男', ageBand: '73 岁', stage: '居家康复第 1 阶段', todayDone: 5, todayTotal: 5 },
+  { id: 'p-005', name: '许秀英', gender: '女', ageBand: '88 岁', stage: '居家康复第 3 阶段', todayDone: 1, todayTotal: 4, flag: '反馈训练困难' },
+  { id: 'p-006', name: '汪建国', gender: '男', ageBand: '69 岁', stage: '居家康复第 5 阶段', todayDone: 4, todayTotal: 4 },
+  { id: 'p-007', name: '林惠珍', gender: '女', ageBand: '84 岁', stage: '居家康复第 2 阶段', todayDone: 2, todayTotal: 3 },
+]
 
 /**
  * 视频素材：正式文件死线 9/1（v0.2 §8）。

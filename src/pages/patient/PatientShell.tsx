@@ -6,7 +6,7 @@ import { IconFile, IconLeaf } from '../../components/Icons'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
 import { TodayView } from './TodayView'
 import { ChatView } from './ChatView'
-import { CalendarView } from './CalendarView'
+import { CheckinCalendar } from '../../components/CheckinCalendar'
 import { GuidanceView } from './GuidanceView'
 import '../../styles/app.css'
 
@@ -76,12 +76,12 @@ export function PatientShell() {
         <Routes>
           <Route index element={<TodayView />} />
           <Route path="chat" element={<ChatView />} />
-          <Route path="calendar" element={<CalendarView />} />
+          <Route path="calendar" element={<CheckinCalendar />} />
           <Route path="guidance" element={<GuidanceView />} />
         </Routes>
       </main>
 
-      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} audience="family" />
     </div>
   )
 }

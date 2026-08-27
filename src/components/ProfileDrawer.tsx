@@ -21,7 +21,7 @@ const KIND_LABEL: Record<CareEventKind, string> = {
  * 本项目不生成（见 KB v0.1 §6 D）。界面上呈现为"待录入"，这同时也
  * 体现了"专业人员保留评估权、AI 不代替评估"的产品主张。
  */
-export function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onClose: () => void; audience: 'family' | 'therapist' }) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -36,6 +36,10 @@ export function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () =>
 
   if (!open) return null
   const a = patient.admission
+  // 契约里 visibleToFamily=false 的评估项不得展示给家属（v0.1 §6 D）
+  const assessments = audience === 'family'
+    ? patient.assessments.filter((x) => x.visibleToFamily)
+    : patient.assessments
 
   return (
     <>
@@ -121,13 +125,17 @@ export function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () =>
           {/* 5 评估记录 */}
           <section className="sec">
             <div className="sec-t">评估记录</div>
-            <div className="sec-d">由康复师现场评估后录入，系统不代为判定</div>
+            <div className="sec-d">
+              由康复师现场评估后录入，系统不代为判定
+              {audience === 'family' && patient.assessments.length > assessments.length &&
+                ` · 另有 ${patient.assessments.length - assessments.length} 项供康复团队内部参考`}
+            </div>
             <table className="tbl">
               <thead>
                 <tr><th>评估项目</th><th>评估日期</th><th>评估人</th><th style={{ textAlign: 'right' }}>结果</th></tr>
               </thead>
               <tbody>
-                {patient.assessments.map((as) => (
+                {assessments.map((as) => (
                   <tr key={as.name}>
                     <td style={{ fontWeight: 600 }}>{as.name}</td>
                     <td className="num" style={{ color: 'var(--ink-2)' }}>{as.date}</td>

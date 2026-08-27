@@ -199,6 +199,26 @@ export interface ChatMessage {
   escalated?: boolean
 }
 
+/**
+ * 转康复师的待处理咨询 —— 补齐"AI 处理不了时交给谁"这条链路（v0.1 §12）。
+ * 来源有二：对话里点"转康复师"，或任务卡上反馈"遇到困难"。
+ */
+export interface Escalation {
+  id: string
+  patientId: string
+  at: ISODateTime
+  source: 'chat' | 'task'
+  /** 家属的问题，或训练困难的描述 */
+  question: string
+  /** 随问题一起带给康复师的上下文 */
+  context: string[]
+  taskId?: string
+  status: 'pending' | 'answered'
+  answer?: string
+  answeredAt?: ISODateTime
+  therapistName?: string
+}
+
 /** 康复师回写指导 —— 演示的价值落点（v0.2 §1） */
 export interface Guidance {
   id: string
@@ -217,6 +237,18 @@ export interface Therapist {
   title: string
 }
 
+/** 康复师的患者列表项 —— 只有当前患者有完整档案，其余仅用于呈现服务规模 */
+export interface RosterEntry {
+  id: string
+  name: string
+  gender: '男' | '女'
+  ageBand: string
+  stage: string
+  todayDone: number
+  todayTotal: number
+  flag?: string
+}
+
 /* ---------- 持久化根结构 ---------- */
 
 export interface DemoState {
@@ -225,4 +257,5 @@ export interface DemoState {
   uploads: VideoUpload[]
   messages: ChatMessage[]
   guidances: Guidance[]
+  escalations: Escalation[]
 }

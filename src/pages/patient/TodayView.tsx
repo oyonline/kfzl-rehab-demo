@@ -1,17 +1,37 @@
-import { toISODate, videos } from '../../data/seed'
-import { setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
-import { IconActivity, IconCheck, IconClock, IconPill, IconPlay } from '../../components/Icons'
+import { useEffect, useState } from 'react'
+import { patient, therapist, toISODate, videos } from '../../data/seed'
+import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
+import { IconActivity, IconAlert, IconCheck, IconClock, IconPill, IconPlay } from '../../components/Icons'
 
 export function TodayView() {
   const state = useDemoState()
   const today = toISODate(new Date())
-  const rows = todayCheckIns(state, today)
+  const rows = todayCheckIns(state, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
+  const [troubleFor, setTroubleFor] = useState<string | null>(null)
+  const [note, setNote] = useState('')
+
+  // 打开今日页即视为看过康复师的留言，康复师端据此显示"家属已读"
+  useEffect(() => { markAllGuidanceRead() }, [state.guidances.length])
 
   const total = rows.length
-  const done = rows.filter((r) => r.checkIn?.status === 'done').length
+  const done = rows.filter((r) => r.status === 'done').length
   const remaining = total - done
-  const next = rows.find((r) => r.checkIn?.status !== 'done')
+  const next = rows.find((r) => r.status === 'pending')
   const guidances = [...state.guidances].reverse()
+
+  function submitTrouble(taskId: string, title: string) {
+    const text = note.trim()
+    if (!text) return
+    setCheckIn(taskId, 'difficulty', text)
+    createEscalation({
+      source: 'task',
+      taskId,
+      question: `${title}：${text}`,
+      context: [`${patient.name} · ${patient.diagnosis.stage}`, `${today} 训练反馈`],
+    })
+    setTroubleFor(null)
+    setNote('')
+  }
 
   return (
     <div className="stack">
@@ -23,7 +43,11 @@ export function TodayView() {
             {remaining === 0 ? '今天的项目已经全部完成' : `今天还有 ${remaining} 项待完成`}
           </div>
           <div className="hero-sub">
-            {remaining === 0 ? '坚持得很好，明天继续保持' : `下一项 ${next?.task.scheduledTime} · ${next?.task.title}`}
+            {remaining === 0
+              ? '坚持得很好，明天继续保持'
+              : next
+                ? `下一项 ${next.task.scheduledTime} · ${next.task.title}`
+                : '今天的时间点都已过去，未完成的项目可以补做后补打卡'}
           </div>
         </div>
         <div className="hero-next">
@@ -62,9 +86,9 @@ export function TodayView() {
         </div>
 
         <div className="timeline">
-          {rows.map(({ task, checkIn }) => {
-            const isDone = checkIn?.status === 'done'
-            const isNext = !isDone && next?.task.id === task.id
+          {rows.map(({ task, checkIn, status }) => {
+            const isDone = status === 'done'
+            const isNext = next?.task.id === task.id
             const video = task.videoId ? videos.find((v) => v.id === task.videoId) : undefined
             return (
               <div className="tl-item" key={task.id}>
@@ -84,16 +108,35 @@ export function TodayView() {
                       <span>{task.reps ?? task.instruction}</span>
                       {video && <span className="chip" style={{ padding: '2px 9px' }}><IconPlay size={10} /> 示范视频</span>}
                     </div>
+                    {status === 'difficulty' && checkIn?.note && (
+                      <div className="tl-desc" style={{ marginTop: 6, color: 'var(--clay-700)' }}>
+                        已反馈：{checkIn.note} · 等待 {therapist.name} 康复师回复
+                      </div>
+                    )}
                   </div>
                   <div className="tl-actions">
-                    {isDone ? (
+                    {isDone && (
                       <>
                         <span className="chip chip-ok"><IconCheck size={10} /> 已完成</span>
                         <button className="btn-quiet" onClick={() => setCheckIn(task.id, 'pending')}>撤销</button>
                       </>
-                    ) : (
+                    )}
+                    {status === 'difficulty' && (
                       <>
-                        <span className="chip chip-wait"><IconClock size={11} /> 待完成</span>
+                        <span className="chip chip-wait"><IconAlert size={11} /> 已反馈困难</span>
+                        <button className="btn" onClick={() => setCheckIn(task.id, 'done')}>
+                          <IconCheck size={11} /> 已完成
+                        </button>
+                      </>
+                    )}
+                    {(status === 'pending' || status === 'missed') && (
+                      <>
+                        <span className={`chip ${status === 'missed' ? 'chip-miss' : 'chip-wait'}`}>
+                          {status === 'missed' ? '未完成' : <><IconClock size={11} /> 待完成</>}
+                        </span>
+                        <button className="btn-quiet" onClick={() => { setTroubleFor(troubleFor === task.id ? null : task.id); setNote('') }}>
+                          遇到困难
+                        </button>
                         <button className="btn" onClick={() => setCheckIn(task.id, 'done')}>
                           <IconCheck size={11} /> 打卡
                         </button>
@@ -101,6 +144,23 @@ export function TodayView() {
                     )}
                   </div>
                 </div>
+
+                {troubleFor === task.id && (
+                  <div className="trouble">
+                    <div className="trouble-t">遇到什么困难？会连同她的档案一起转给 {therapist.name} 康复师</div>
+                    <textarea
+                      className="ta" rows={2} value={note} autoFocus
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="例：做到一半就说累，右腿抬不起来。"
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                      <button className="btn-quiet" onClick={() => setTroubleFor(null)}>取消</button>
+                      <button className="btn" disabled={!note.trim()} onClick={() => submitTrouble(task.id, task.title)}>
+                        提交给康复师
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}

@@ -9,11 +9,11 @@
  */
 
 import { useSyncExternalStore } from 'react'
-import type { CheckIn, CheckInStatus, ChatMessage, DemoState, Guidance, VideoUpload } from '../data/types'
+import type { CheckIn, CheckInStatus, ChatMessage, DemoState, Escalation, Guidance, TaskDef, VideoUpload } from '../data/types'
 import { PATIENT_ID, buildHistory, taskDefs, toISODate } from '../data/seed'
 
 const KEY = 'kfzl.demo.v1'
-const SCHEMA_VERSION = 2  // 2026-08-27 去掉数据中的演示字样，旧数据自动重置
+const SCHEMA_VERSION = 3  // 2026-08-27 新增 escalations，旧数据自动重置
 
 function initialState(): DemoState {
   return {
@@ -22,6 +22,7 @@ function initialState(): DemoState {
     uploads: [],
     messages: [],
     guidances: [],
+    escalations: [],
   }
 }
 
@@ -165,6 +166,57 @@ export function markGuidanceRead(id: string) {
   write({ ...s, guidances: s.guidances.map((g) => (g.id === id ? { ...g, readByFamily: true } : g)) })
 }
 
+/** 家属端打开今日页即视为已读；康复师端据此显示"家属已读" */
+export function markAllGuidanceRead() {
+  const s = read()
+  if (!s.guidances.some((g) => !g.readByFamily)) return
+  write({ ...s, guidances: s.guidances.map((g) => ({ ...g, readByFamily: true })) })
+}
+
+/* ---------- 转康复师 ---------- */
+
+export function createEscalation(input: {
+  source: 'chat' | 'task'
+  question: string
+  context: string[]
+  taskId?: string
+}) {
+  const s = read()
+  const at = new Date()
+  const e: Escalation = {
+    id: nextId('esc', at),
+    patientId: PATIENT_ID,
+    at: at.toISOString(),
+    status: 'pending',
+    ...input,
+  }
+  write({ ...s, escalations: [...s.escalations, e] })
+  return e
+}
+
+/**
+ * 康复师答复：既落进 escalations 供工作台追踪，
+ * 也镜像一条 therapist 消息，让家属在同一个对话里看到回复。
+ */
+export function answerEscalation(id: string, answer: string, therapistName: string) {
+  const s = read()
+  const at = new Date()
+  const escalations = s.escalations.map((e) =>
+    e.id === id ? { ...e, status: 'answered' as const, answer, answeredAt: at.toISOString(), therapistName } : e,
+  )
+  const messages: ChatMessage[] = [
+    ...s.messages,
+    {
+      id: nextId('msg', at),
+      patientId: PATIENT_ID,
+      role: 'therapist',
+      text: answer,
+      at: at.toISOString(),
+    },
+  ]
+  write({ ...s, escalations, messages })
+}
+
 /** 排练用：一键回到演示初始状态 */
 export function resetDemo() {
   write(initialState())
@@ -177,4 +229,28 @@ export function todayCheckIns(state: DemoState, date = toISODate(new Date())) {
     task: t,
     checkIn: state.checkIns.find((c) => c.taskId === t.id && c.date === date),
   }))
+}
+
+/** 到点未打卡后多久算未完成 */
+const GRACE_MIN = 90
+
+/**
+ * 任务的实际状态 —— 两端必须用同一个判定，否则家属端与康复师端会各说各话。
+ *
+ * 计划时间 + 宽限 90 分钟仍未打卡即视为未完成。演示时钟接入后（9/1–9/3）
+ * 把 now 换成时钟时间即可，无需改判定逻辑。
+ */
+export function effectiveStatus(task: TaskDef, checkIn: CheckIn | undefined, now = new Date()): CheckInStatus {
+  if (checkIn?.status === 'done' || checkIn?.status === 'difficulty' || checkIn?.status === 'missed') {
+    return checkIn.status
+  }
+  const [h, m] = task.scheduledTime.split(':').map(Number)
+  const due = new Date(now)
+  due.setHours(h, m + GRACE_MIN, 0, 0)
+  return now > due ? 'missed' : 'pending'
+}
+
+/** 待康复师处理的咨询 */
+export function pendingEscalations(state: DemoState) {
+  return state.escalations.filter((e) => e.status === 'pending')
 }

@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { taskDefs, toISODate } from '../../data/seed'
-import { useDemoState } from '../../store/store'
-import { IconCheck } from '../../components/Icons'
+import { taskDefs, toISODate } from '../data/seed'
+import { effectiveStatus, useDemoState } from '../store/store'
+import { IconCheck } from './Icons'
 
 const WEEK = ['日', '一', '二', '三', '四', '五', '六']
 
 type State = 'out' | 'future' | 'full' | 'partial' | 'none'
 
-export function CalendarView() {
+/** 打卡日历 —— 两端共用，保证家属与康复师看到的是同一套判定 */
+export function CheckinCalendar() {
   const state = useDemoState()
   const today = new Date()
   const todayKey = toISODate(today)
@@ -45,10 +46,11 @@ export function CalendarView() {
   const tracked = cells.filter((c) => c.state === 'full' || c.state === 'partial' || c.state === 'none').length
 
   const detail = selected
-    ? taskDefs.map((t) => ({
-        task: t,
-        hit: state.checkIns.find((c) => c.date === selected && c.taskId === t.id),
-      }))
+    ? taskDefs.map((t) => {
+        const hit = state.checkIns.find((c) => c.date === selected && c.taskId === t.id)
+        const status = selected === todayKey ? effectiveStatus(t, hit) : hit?.status ?? 'missed'
+        return { task: t, status }
+      })
     : []
 
   return (
@@ -105,16 +107,18 @@ export function CalendarView() {
           <table className="tbl">
             <thead><tr><th>时间</th><th>项目</th><th style={{ textAlign: 'right' }}>状态</th></tr></thead>
             <tbody>
-              {detail.map(({ task, hit }) => (
+              {detail.map(({ task, status }) => (
                 <tr key={task.id}>
                   <td className="num" style={{ color: 'var(--ink-2)', fontWeight: 600 }}>{task.scheduledTime}</td>
                   <td style={{ fontWeight: 550 }}>{task.title}</td>
                   <td style={{ textAlign: 'right' }}>
-                    {hit?.status === 'done'
+                    {status === 'done'
                       ? <span className="chip chip-ok"><IconCheck size={10} /> 已完成</span>
-                      : hit?.status === 'missed'
-                        ? <span className="chip chip-miss">未完成</span>
-                        : <span className="chip chip-wait">待完成</span>}
+                      : status === 'difficulty'
+                        ? <span className="chip chip-wait">已反馈困难</span>
+                        : status === 'missed'
+                          ? <span className="chip chip-miss">未完成</span>
+                          : <span className="chip chip-wait">待完成</span>}
                   </td>
                 </tr>
               ))}

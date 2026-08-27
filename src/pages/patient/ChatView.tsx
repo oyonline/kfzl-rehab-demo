@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
 import { patient, therapist } from '../../data/seed'
-import { addMessage, useDemoState } from '../../store/store'
+import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
 
 /** **加粗** 的极简渲染，避免为一处强调引入 markdown 依赖 */
@@ -69,15 +69,23 @@ export function ChatView() {
                   </div>
                 )}
 
-                {!isMe && m.escalated && (
-                  <div className="escalate">
-                    <span style={{ flex: 1 }}>{hint}</span>
-                    <button className="btn" onClick={() => addMessage({
-                      role: 'therapist',
-                      text: `已转交 ${therapist.name} 康复师，她会在查看档案后回复您。`,
-                    })}>转康复师</button>
-                  </div>
-                )}
+                {!isMe && m.escalated && (() => {
+                  const asked = messages.find((x) => x.role === 'family' && x.at < m.at)
+                  const question = [...messages].reverse().find((x) => x.role === 'family' && x.at <= m.at)?.text ?? asked?.text ?? ''
+                  const sent = state.escalations.some((e) => e.question === question)
+                  return (
+                    <div className="escalate">
+                      <span style={{ flex: 1 }}>{sent ? `已转交 ${therapist.name} 康复师，回复会显示在这里` : hint}</span>
+                      {!sent && (
+                        <button className="btn" onClick={() => createEscalation({
+                          source: 'chat',
+                          question,
+                          context: m.basis ?? [],
+                        })}>转康复师</button>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
               {isMe && <span className="bub-av" style={{ background: 'var(--surface-3)', color: 'var(--ink-2)' }}><IconUser size={16} /></span>}
             </div>

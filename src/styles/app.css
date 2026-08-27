@@ -456,3 +456,31 @@
   background: var(--miss-bg); color: var(--miss); font-size: var(--t-sm); line-height: 1.6;
   display: flex; gap: 10px;
 }
+
+/* 导航角标 */
+.nav a { position: relative; display: inline-flex; align-items: center; gap: 7px; }
+.nav-badge {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--miss); color: #fff; font-size: 11px; font-weight: 700;
+  display: inline-grid; place-items: center;
+}
+
+/* 非当前患者：可见但不可选，不为演示编造第二份病例 */
+.plist-item[data-muted='true'] { opacity: .62; cursor: default; }
+.plist-item[data-muted='true']:hover { background: transparent; }
+
+/* 待处理咨询卡 */
+.esc-card {
+  border: 1px solid var(--line); border-left: 3px solid var(--clay-500);
+  border-radius: var(--r); padding: 18px 20px; background: var(--surface);
+}
+.esc-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.esc-q { font-size: var(--t-base); font-weight: 550; line-height: 1.6; }
+
+/* 家属端：反馈困难 */
+.trouble {
+  margin-top: 10px; padding: 16px 18px; border-radius: var(--r);
+  background: var(--clay-100); border: 1px solid #eed6bd;
+}
+.trouble-t { font-size: var(--t-sm); color: var(--clay-700); margin-bottom: 10px; }
+.trouble .ta { background: var(--surface); border-color: #e4c9ab; }
