@@ -1,35 +1,28 @@
-import { useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { currentSession, signOut } from '../../auth/auth'
-import { PATIENT_ID, patient, roster, therapist, toISODate } from '../../data/seed'
-import { effectiveStatus, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
-import { IconAlert, IconFile, IconLeaf } from '../../components/Icons'
-import { ProfileDrawer } from '../../components/ProfileDrawer'
-import { CheckinCalendar } from '../../components/CheckinCalendar'
-import { FollowupView } from './FollowupView'
-import { ConsultView } from './ConsultView'
-import { GuidanceLogView } from './GuidanceLogView'
+import { therapist } from '../../data/seed'
+import { pendingEscalations, useDemoState } from '../../store/store'
+import { IconLeaf } from '../../components/Icons'
+import { PatientListView } from './PatientListView'
+import { PatientDetail } from './PatientDetail'
+import { InboxView } from './InboxView'
 import '../../styles/app.css'
 
 /**
- * 康复师端 —— 与家属端同构：顶部分页 + 左侧常驻列表。
- * 不必上门，在工作台看到这位老人做了什么、做得怎样，并回写指导。
+ * 康复师端外壳。
+ *
+ * 信息架构：工作台级导航（在管患者 / 待处理）→ 患者列表 → 患者详情 → 详情内页签。
+ * 顶部只放工作台级入口，患者内的分页放在详情页里，不混在同一层。
  */
 export function TherapistShell() {
   const nav = useNavigate()
   const session = currentSession()
   const state = useDemoState()
-  const [profileOpen, setProfileOpen] = useState(false)
-
-  const rows = todayCheckIns(state, toISODate(new Date()))
-  const doneToday = rows.filter((r) => effectiveStatus(r.task, r.checkIn) === 'done').length
   const pending = pendingEscalations(state).length
 
   const NAV = [
-    { to: '/therapist', label: '随访概览', end: true },
-    { to: '/therapist/consult', label: '咨询记录', badge: pending },
-    { to: '/therapist/adherence', label: '依从性' },
-    { to: '/therapist/guidance', label: '指导记录' },
+    { to: '/therapist', label: '在管患者', end: true },
+    { to: '/therapist/inbox', label: '待处理', badge: pending },
   ]
 
   return (
@@ -63,46 +56,14 @@ export function TherapistShell() {
         </div>
       </header>
 
-      <main className="page split">
-        <aside className="card" style={{ padding: 12 }}>
-          <div className="eyebrow" style={{ padding: '8px 14px 6px', marginBottom: 0 }}>
-            我的患者 · {roster.length}
-          </div>
-
-          {roster.map((r) => {
-            const active = r.id === PATIENT_ID
-            const done = active ? doneToday : r.todayDone
-            const full = done >= r.todayTotal
-            return (
-              <div className="plist-item" key={r.id} data-active={active} data-muted={!active}>
-                <span className="who-dot" style={{ width: 36, height: 36, fontSize: 'var(--t-sm)' }}>{r.name[0]}</span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <div className="plist-name">{r.name}</div>
-                  <div className="plist-meta">
-                    {r.flag
-                      ? <span style={{ color: 'var(--clay-700)' }}><IconAlert size={10} /> {r.flag}</span>
-                      : `${r.gender} · ${r.ageBand}`}
-                  </div>
-                </span>
-                <span className={`chip ${full ? 'chip-ok' : 'chip-wait'} num`}>{done}/{r.todayTotal}</span>
-              </div>
-            )
-          })}
-
-          <button className="link-more" style={{ marginTop: 12 }} onClick={() => setProfileOpen(true)}>
-            <IconFile /> {patient.name}的完整档案
-          </button>
-        </aside>
-
+      <main className="page">
         <Routes>
-          <Route index element={<FollowupView />} />
-          <Route path="consult" element={<ConsultView />} />
-          <Route path="adherence" element={<CheckinCalendar />} />
-          <Route path="guidance" element={<GuidanceLogView />} />
+          <Route index element={<PatientListView />} />
+          <Route path="inbox" element={<InboxView />} />
+          <Route path="patients/:id/*" element={<PatientDetail />} />
+          <Route path="*" element={<PatientListView />} />
         </Routes>
       </main>
-
-      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} audience="therapist" />
     </div>
   )
 }

@@ -21,17 +21,6 @@ export function FollowupView() {
   return (
     <div className="stack">
       <section className="card card-pad">
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 22 }}>
-          <span className="avatar" style={{ width: 64, height: 64, fontSize: 24, marginBottom: 0 }}>{patient.name[0]}</span>
-          <div style={{ flex: 1 }}>
-            <h1 className="card-title" style={{ fontSize: 'var(--t-xl)' }}>{patient.name}</h1>
-            <p className="card-note" style={{ marginTop: 3 }}>
-              {patient.diagnosis.strokeType} · {patient.diagnosis.stage} · 发病 {patient.diagnosis.onsetDate}
-            </p>
-          </div>
-          <span className="chip chip-brand">下次复评 {patient.goals.nextReviewDate}</span>
-        </div>
-
         <div className="stats">
           <Stat k="今日完成" v={`${done}`} unit={`/ ${rows.length}`} />
           <Stat k="近 7 日完成率" v={`${weekRate}`} unit="%" />

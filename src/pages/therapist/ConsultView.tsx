@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { patient, taskDefs, therapist } from '../../data/seed'
-import { answerEscalation, pendingEscalations, useDemoState } from '../../store/store'
-import { IconAlert, IconChat, IconSend, IconUser } from '../../components/Icons'
+import { patient, therapist } from '../../data/seed'
+import { pendingEscalations, useDemoState } from '../../store/store'
+import { IconChat, IconUser } from '../../components/Icons'
+import { EscalationCard } from '../../components/EscalationCard'
 
 /**
  * 咨询记录 —— 补齐此前缺失的两条链路：
@@ -11,7 +11,6 @@ import { IconAlert, IconChat, IconSend, IconUser } from '../../components/Icons'
 export function ConsultView() {
   const state = useDemoState()
   const pending = pendingEscalations(state)
-  const [drafts, setDrafts] = useState<Record<string, string>>({})
 
   return (
     <div className="stack">
@@ -33,46 +32,7 @@ export function ConsultView() {
           </div>
         ) : (
           <div className="stack" style={{ gap: 14 }}>
-            {pending.map((e) => {
-              const task = e.taskId ? taskDefs.find((t) => t.id === e.taskId) : undefined
-              return (
-                <article className="esc-card" key={e.id}>
-                  <div className="esc-hd">
-                    <span className="chip chip-wait">
-                      <IconAlert size={11} /> {e.source === 'task' ? '训练困难' : '对话转人工'}
-                    </span>
-                    <span className="card-note num">
-                      {new Date(e.at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="esc-q">{e.question}</div>
-                  <div className="basis" style={{ marginTop: 10 }}>
-                    <b>上下文</b>
-                    {[...e.context, ...(task ? [`${task.scheduledTime} ${task.title}`] : [])].map((c) => (
-                      <span className="chip" key={c} style={{ padding: '2px 9px' }}>{c}</span>
-                    ))}
-                  </div>
-                  <textarea
-                    className="ta" rows={2} style={{ marginTop: 14 }}
-                    value={drafts[e.id] ?? ''}
-                    onChange={(ev) => setDrafts({ ...drafts, [e.id]: ev.target.value })}
-                    placeholder={`回复 ${patient.caregiver.name}，内容会直接出现在家属的对话里`}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                    <button
-                      className="btn"
-                      disabled={!(drafts[e.id] ?? '').trim()}
-                      onClick={() => {
-                        answerEscalation(e.id, drafts[e.id].trim(), therapist.name)
-                        setDrafts({ ...drafts, [e.id]: '' })
-                      }}
-                    >
-                      <IconSend size={13} /> 回复家属
-                    </button>
-                  </div>
-                </article>
-              )
-            })}
+            {pending.map((e) => <EscalationCard esc={e} key={e.id} />)}
           </div>
         )}
       </section>

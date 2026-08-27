@@ -546,3 +546,23 @@
 
 .chip-link { transition: background .15s, color .15s; }
 .chip-link:hover { background: var(--green-100); color: var(--green-700); }
+
+/* ---------------- 患者详情 ---------------- */
+
+.detail-hd { display: flex; align-items: center; gap: 20px; padding: 22px 26px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 0; }
+.tabs a {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 11px 18px; font-size: var(--t-sm); font-weight: 550; color: var(--ink-2);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.tabs a:hover { color: var(--ink); }
+.tabs a.active { color: var(--green-700); font-weight: 650; border-bottom-color: var(--green-700); }
+
+/* 患者列表 */
+.ptable td { padding: 14px 14px; vertical-align: middle; }
+.ptable tbody tr[data-open='false'] { color: var(--ink-3); }
+.ptable tbody tr[data-open='false'] .who-dot { background: var(--surface-3); color: var(--ink-3); }
+.ptable a.btn-quiet { text-decoration: none; }

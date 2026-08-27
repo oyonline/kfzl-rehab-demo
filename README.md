@@ -55,7 +55,18 @@ src/pages/therapist/ 康复师端
 
 训练视频**不占顶部导航**：从今日安排的任务卡点「示范视频」进入 `/patient/videos/:id`，或从今日安排标题旁的「全部训练视频」进入 `/patient/videos`。入口跟着任务走，符合“点开任务节点播放示范视频”的原始要求。
 
-康复师端四页：`/therapist`（随访概览）、`/therapist/consult`（咨询记录）、`/therapist/adherence`（依从性）、`/therapist/guidance`（指导记录）。
+康复师端是**三层结构**，工作台级导航只放工作台级入口，患者内的分页放在详情页里：
+
+```
+/therapist                          在管患者列表（工作台首页）
+/therapist/inbox                    待处理（跨患者的待回复咨询）
+/therapist/patients/:id             患者详情 · 随访概览
+/therapist/patients/:id/consult     患者详情 · 咨询记录
+/therapist/patients/:id/adherence   患者详情 · 依从性（月日历，与家属端同一组件）
+/therapist/patients/:id/guidance    患者详情 · 指导记录
+```
+
+列表里 7 位患者都可见，但只有陈桂芳有完整档案与实时数据可进入——不为演示编造第二份病例，其余行标注为另一位康复师主责。
 
 ## 视频与上传的两个约定
 
