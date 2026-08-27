@@ -163,7 +163,10 @@
 .tl-node-now { border-color: var(--clay-500); box-shadow: 0 0 0 5px var(--clay-100); }
 
   .tl-card {
-  display: grid; grid-template-columns: 58px 40px 1fr auto auto; gap: 16px; align-items: center;
+  display: grid;
+  /* 后三列必须定宽：末列若用 auto，会随按钮文字长短伸缩，各行的状态与按钮就对不齐 */
+  grid-template-columns: 56px 40px minmax(0, 1fr) 118px 96px 216px;
+  gap: 14px; align-items: center;
   padding: 15px 18px; border-radius: var(--r);
   background: var(--surface); border: 1px solid var(--line);
   transition: border-color .16s, background .16s;
@@ -176,7 +179,9 @@
   background: var(--teal-50); color: var(--teal-700);
   display: grid; place-items: center;
 }
-.tl-state { min-width: 76px; display: flex; justify-content: flex-end; }
+.tl-video { display: flex; }
+.tl-state { display: flex; justify-content: flex-end; }
+.tl-state .chip { white-space: nowrap; }
 .tl-card:hover { background: var(--surface); border-color: var(--line-2); }
 .tl-card-done { background: var(--surface); border-color: var(--line); opacity: .82; }
 .tl-card-done .tl-title { color: var(--ink-2); }
@@ -184,7 +189,7 @@
 .tl-time { font-size: var(--t-md); font-weight: 620; color: var(--ink-2); letter-spacing: .01em; }
 .tl-title { font-size: var(--t-base); font-weight: 600; margin-bottom: 2px; }
 .tl-desc { font-size: var(--t-sm); color: var(--ink-3); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; line-height: 1.5; }
-.tl-actions { display: flex; align-items: center; gap: 12px; }
+.tl-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 
 /* ---------------- 指导消息 ---------------- */
 

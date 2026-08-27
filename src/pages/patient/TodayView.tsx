@@ -131,16 +131,20 @@ export function TodayView() {
                     <div className="tl-title">{task.title}</div>
                     <div className="tl-desc">
                       <span>{task.reps ?? task.instruction}</span>
-                      {video && (
-                        <Link className="chip chip-link" to={`/patient/videos/${video.id}`}>
-                          <IconPlay size={11} /> 看示范视频
-                        </Link>
-                      )}
                     </div>
                     {status === 'difficulty' && checkIn?.note && (
                       <div className="tl-desc" style={{ marginTop: 6, color: 'var(--wait)' }}>
                         已反馈：{checkIn.note} · 等待 {therapist.name} 康复师回复
                       </div>
+                    )}
+                  </div>
+
+                  {/* 独立成列，各行的视频入口才会纵向对齐；无视频的行留空占位 */}
+                  <div className="tl-video">
+                    {video && (
+                      <Link className="chip chip-link" to={`/patient/videos/${video.id}`}>
+                        <IconPlay size={11} /> 看示范视频
+                      </Link>
                     )}
                   </div>
 
