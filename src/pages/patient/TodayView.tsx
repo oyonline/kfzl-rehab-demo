@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { patient, therapist, toISODate, videos } from '../../data/seed'
+import { Link, useNavigate } from 'react-router-dom'
+import { SUPPORT_PHONE, patient, therapist, toISODate, videos } from '../../data/seed'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
-import { IconActivity, IconAlert, IconCheck, IconClock, IconPill, IconPlay } from '../../components/Icons'
+import { IconActivity, IconAlert, IconCheck, IconClock, IconPill, IconPlay, IconShield } from '../../components/Icons'
 import { Lines } from '../../components/Lines'
 
 export function TodayView() {
+  const nav = useNavigate()
   const state = useDemoState()
   const today = toISODate(new Date())
   const rows = todayCheckIns(state, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
@@ -104,20 +105,24 @@ export function TodayView() {
             const isDone = status === 'done'
             const isNext = next?.task.id === task.id
             const video = task.videoId ? videos.find((v) => v.id === task.videoId) : undefined
+            // 主操作按任务性质区分：服药是终态确认，训练要先看示范再打卡
+            const main = task.kind === 'medication'
+              ? { label: '确认已服药', run: () => setCheckIn(task.id, 'done') }
+              : video
+                ? { label: '开始训练', run: () => nav(`/patient/videos/${video.id}`) }
+                : { label: '完成打卡', run: () => setCheckIn(task.id, 'done') }
             return (
               <div className="tl-item" key={task.id}>
                 <span className={`tl-node${isDone ? ' tl-node-done' : ''}${isNext ? ' tl-node-now' : ''}`}>
                   {isDone && <IconCheck size={9} />}
                 </span>
-                <div className={`tl-card${isDone ? ' tl-card-done' : ''}`}>
+                <div className={`tl-card${isDone ? ' tl-card-done' : ''}${isNext ? ' tl-card-now' : ''}`}>
                   <time className="tl-time num">{task.scheduledTime}</time>
+                  <span className="tl-ico">
+                    {task.kind === 'medication' ? <IconPill size={18} /> : <IconActivity size={18} />}
+                  </span>
                   <div>
-                    <div className="tl-title">
-                      <span style={{ color: 'var(--ink-3)', marginRight: 8, verticalAlign: -2, display: 'inline-block' }}>
-                        {task.kind === 'medication' ? <IconPill size={15} /> : <IconActivity size={15} />}
-                      </span>
-                      {task.title}
-                    </div>
+                    <div className="tl-title">{task.title}</div>
                     <div className="tl-desc">
                       <span>{task.reps ?? task.instruction}</span>
                       {video && (
@@ -127,39 +132,31 @@ export function TodayView() {
                       )}
                     </div>
                     {status === 'difficulty' && checkIn?.note && (
-                      <div className="tl-desc" style={{ marginTop: 6, color: 'var(--clay-700)' }}>
+                      <div className="tl-desc" style={{ marginTop: 6, color: 'var(--wait)' }}>
                         已反馈：{checkIn.note} · 等待 {therapist.name} 康复师回复
                       </div>
                     )}
                   </div>
+
+                  <div className="tl-state">
+                    {isDone && <span className="chip chip-ok"><IconCheck size={10} /> 已完成</span>}
+                    {status === 'difficulty' && <span className="chip chip-wait"><IconAlert size={11} /> 已反馈困难</span>}
+                    {status === 'missed' && <span className="chip chip-miss">未完成</span>}
+                    {status === 'pending' && (isNext
+                      ? <span className="chip chip-wait"><IconClock size={11} /> 即将开始</span>
+                      : <span className="chip">未开始</span>)}
+                  </div>
+
                   <div className="tl-actions">
-                    {isDone && (
+                    {isDone ? (
+                      <button className="btn-quiet" onClick={() => setCheckIn(task.id, 'pending')}>撤销</button>
+                    ) : (
                       <>
-                        <span className="chip chip-ok"><IconCheck size={10} /> 已完成</span>
-                        <button className="btn-quiet" onClick={() => setCheckIn(task.id, 'pending')}>撤销</button>
-                      </>
-                    )}
-                    {status === 'difficulty' && (
-                      <>
-                        <span className="chip chip-wait"><IconAlert size={11} /> 已反馈困难</span>
-                        <button className="btn" onClick={() => setCheckIn(task.id, 'done')}>
-                          <IconCheck size={11} /> 已完成
-                        </button>
-                      </>
-                    )}
-                    {(status === 'pending' || status === 'missed') && (
-                      <>
-                        {status === 'missed'
-                          ? <span className="chip chip-miss">未完成</span>
-                          : isNext
-                            ? <span className="chip chip-wait"><IconClock size={11} /> 即将开始</span>
-                            : <span className="chip">待完成</span>}
+                        {/* 求助入口固定在旁边，不藏 */}
                         <button className="btn-quiet" onClick={() => { setTroubleFor(troubleFor === task.id ? null : task.id); setNote('') }}>
                           遇到困难
                         </button>
-                        <button className="btn" onClick={() => setCheckIn(task.id, 'done')}>
-                          <IconCheck size={11} /> 打卡
-                        </button>
+                        <button className="btn" onClick={main.run}>{main.label}</button>
                       </>
                     )}
                   </div>
@@ -184,6 +181,14 @@ export function TodayView() {
               </div>
             )
           })}
+        </div>
+
+        <div className="safety">
+          <span className="safety-i"><IconShield size={15} /></span>
+          <span style={{ flex: 1 }}>
+            如出现头晕、胸闷、恶心、呛咳加重等不适，请立即停止训练并联系康复师或就医。
+          </span>
+          <span className="safety-tel">服务电话 {SUPPORT_PHONE}</span>
         </div>
       </section>
     </div>

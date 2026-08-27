@@ -163,13 +163,22 @@
 .tl-node-now { border-color: var(--clay-500); box-shadow: 0 0 0 5px var(--clay-100); }
 
   .tl-card {
-  display: grid; grid-template-columns: 62px 1fr auto; gap: 18px; align-items: center;
-  padding: 16px 20px; border-radius: var(--r);
-  background: var(--surface-2); border: 1px solid transparent;
-  transition: background .16s, border-color .16s;
+  display: grid; grid-template-columns: 58px 40px 1fr auto auto; gap: 16px; align-items: center;
+  padding: 15px 18px; border-radius: var(--r);
+  background: var(--surface); border: 1px solid var(--line);
+  transition: border-color .16s, background .16s;
 }
+/* 当前该做的一项：橙色底与描边，一眼可辨 */
+.tl-card-now { background: var(--wait-bg); border-color: #f0dfc2; }
+.tl-card-now .tl-time { color: var(--wait); }
+.tl-ico {
+  width: 40px; height: 40px; border-radius: var(--r-sm);
+  background: var(--teal-50); color: var(--teal-700);
+  display: grid; place-items: center;
+}
+.tl-state { min-width: 76px; display: flex; justify-content: flex-end; }
 .tl-card:hover { background: var(--surface); border-color: var(--line-2); }
-.tl-card-done { background: transparent; }
+.tl-card-done { background: var(--surface); border-color: var(--line); opacity: .82; }
 .tl-card-done .tl-title { color: var(--ink-2); }
 
 .tl-time { font-size: var(--t-md); font-weight: 620; color: var(--ink-2); letter-spacing: .01em; }
@@ -653,3 +662,77 @@
   font-size: var(--t-sm); transition: background .15s, border-color .15s;
 }
 .msg-more:hover { background: var(--teal-50); border-color: var(--teal-300); color: var(--teal-700); }
+
+/* ---------------- 顶栏补充 ---------------- */
+
+.bell {
+  position: relative; width: 34px; height: 34px; border-radius: var(--r);
+  display: grid; place-items: center; color: var(--ink-2);
+  transition: background .15s;
+}
+.bell:hover { background: var(--surface-2); }
+.bell[data-unread='true']::after {
+  content: ''; position: absolute; top: 7px; right: 8px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--wait);            /* 未读是提醒，不是异常 */
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* 导航改下划线：比胶囊底更轻 */
+.nav a {
+  border-radius: 0; padding: 9px 2px; margin: 0 12px;
+  border-bottom: 2px solid transparent;
+}
+.nav a:hover { background: transparent; color: var(--ink); }
+.nav a.active {
+  background: transparent; color: var(--teal-700); font-weight: 650;
+  border-bottom-color: var(--teal-700);
+}
+
+/* 患者详情页签改分段控件，与顶栏导航区分层级 */
+.tabs { gap: 4px; border-bottom: none; background: var(--surface-2); padding: 4px; border-radius: var(--r); }
+.tabs a { border-bottom: none; margin-bottom: 0; border-radius: var(--r-sm); padding: 8px 16px; }
+.tabs a.active { background: var(--surface); color: var(--teal-700); border-bottom: none; }
+
+/* ---------------- 档案卡 ---------------- */
+
+.profile-hd { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.profile-hd .avatar { width: 62px; height: 62px; border-radius: var(--r); font-size: 24px; margin-bottom: 0; }
+.profile-meta .sep { display: inline-block; width: 1px; height: 11px; background: var(--line-2); margin: 0 9px; vertical-align: -1px; }
+
+.fgroup {
+  font-size: var(--t-xs); font-weight: 650; color: var(--ink-2); letter-spacing: .08em;
+  padding-bottom: 8px; border-bottom: 1px solid var(--line); margin: 22px 0 4px;
+}
+.fgroup:first-of-type { margin-top: 0; }
+
+.tag-warn {
+  margin-left: 7px; padding: 1px 7px; border-radius: var(--r-sm);
+  background: var(--wait-bg); color: var(--wait);
+  font-size: 11px; font-weight: 600;
+}
+
+.risk {
+  margin-top: 18px; padding: 16px 18px; border-radius: var(--r);
+  background: var(--wait-bg); border: 1px solid #f0dfc2;
+}
+.risk-t {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--t-sm); font-weight: 650; color: var(--wait); margin-bottom: 10px;
+}
+.risk ul { display: grid; gap: 7px; }
+.risk li {
+  display: flex; gap: 8px; font-size: var(--t-sm); line-height: 1.6; color: var(--ink-2);
+}
+.risk li::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--wait); flex: none; margin-top: 9px; }
+
+
+/* 常驻安全提示：整条是提示不是异常，只有电话用主色强调 */
+.safety {
+  display: flex; align-items: center; gap: 11px;
+  margin-top: 20px; padding: 14px 18px; border-radius: var(--r);
+  background: var(--teal-50); border: 1px solid var(--teal-100);
+  font-size: var(--t-sm); color: var(--ink-2); line-height: 1.6;
+}
+.safety-i { color: var(--teal-700); flex: none; display: grid; }
+.safety-tel { color: var(--teal-700); font-weight: 650; white-space: nowrap; }

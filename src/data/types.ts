@@ -91,6 +91,8 @@ export interface Patient {
   avatar: string
   ageBand: string
   gender: '男' | '女'
+  heightCm: number
+  weightKg: number
   livingSituation: string
   caregiver: Caregiver
   diagnosis: {

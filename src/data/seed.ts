@@ -11,12 +11,20 @@ import type { Patient, TaskDef, VideoAsset, Therapist, CheckIn, ISODate, RosterE
 
 export const PATIENT_ID = 'p-001'
 
+/**
+ * ⚠️ 占位号码 —— 上台前必须换成机构真实的服务电话。
+ * 页面上出现可拨打的号码，写一个不存在的号有被真拨打的风险。
+ */
+export const SUPPORT_PHONE = '400-000-0000'
+
 export const patient: Patient = {
   id: PATIENT_ID,
   name: '陈桂芳',
   avatar: '',
   ageBand: '85 岁',
   gender: '女',
+  heightCm: 156,
+  weightKg: 48,
   livingSituation: '与女儿同住，白天多数时间独处',
   caregiver: { name: '李敏', relation: '女儿' },
   diagnosis: {

@@ -64,3 +64,13 @@ export const IconApple = ({ size = 18 }: P) => (
 export const IconChevron = ({ size = 16 }: P) => (
   <svg {...base(size)}><path d="m9 18 6-6-6-6" /></svg>
 )
+
+export const IconBell = ({ size = 18 }: P) => (
+  <svg {...base(size)}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+)
+export const IconShield = ({ size = 16 }: P) => (
+  <svg {...base(size)}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z" /><path d="m9 12 2 2 4-4" /></svg>
+)
+export const IconCaret = ({ size = 14 }: P) => (
+  <svg {...base(size)}><path d="m6 9 6 6 6-6" /></svg>
+)
