@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SUPPORT_PHONE, patient, therapist, toISODate, videos } from '../../data/seed'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
-import { IconActivity, IconAlert, IconCheck, IconClock, IconPill, IconPlay, IconShield } from '../../components/Icons'
+import { IconActivity, IconAlert, IconCheck, IconClock, IconHeart, IconPill, IconPlay, IconShield } from '../../components/Icons'
 import { Lines } from '../../components/Lines'
 
 export function TodayView() {
@@ -108,9 +108,11 @@ export function TodayView() {
             // 主操作按任务性质区分：服药是终态确认，训练要先看示范再打卡
             const main = task.kind === 'medication'
               ? { label: '确认已服药', run: () => setCheckIn(task.id, 'done') }
-              : video
-                ? { label: '开始训练', run: () => nav(`/patient/videos/${video.id}`) }
-                : { label: '完成打卡', run: () => setCheckIn(task.id, 'done') }
+              : task.kind === 'record'
+                ? { label: '已记录', run: () => setCheckIn(task.id, 'done') }
+                : video
+                  ? { label: '开始训练', run: () => nav(`/patient/videos/${video.id}`) }
+                  : { label: '完成打卡', run: () => setCheckIn(task.id, 'done') }
             return (
               <div className="tl-item" key={task.id}>
                 <span className={`tl-node${isDone ? ' tl-node-done' : ''}${isNext ? ' tl-node-now' : ''}`}>
@@ -119,15 +121,19 @@ export function TodayView() {
                 <div className={`tl-card${isDone ? ' tl-card-done' : ''}${isNext ? ' tl-card-now' : ''}`}>
                   <time className="tl-time num">{task.scheduledTime}</time>
                   <span className="tl-ico">
-                    {task.kind === 'medication' ? <IconPill size={18} /> : <IconActivity size={18} />}
+                    {task.kind === 'medication'
+                      ? <IconPill size={18} />
+                      : task.kind === 'record'
+                        ? <IconHeart size={18} />
+                        : <IconActivity size={18} />}
                   </span>
                   <div>
                     <div className="tl-title">{task.title}</div>
                     <div className="tl-desc">
                       <span>{task.reps ?? task.instruction}</span>
                       {video && (
-                        <Link className="chip chip-link" to={`/patient/videos/${video.id}`} style={{ padding: '2px 9px' }}>
-                          <IconPlay size={10} /> 示范视频
+                        <Link className="chip chip-link" to={`/patient/videos/${video.id}`}>
+                          <IconPlay size={11} /> 看示范视频
                         </Link>
                       )}
                     </div>

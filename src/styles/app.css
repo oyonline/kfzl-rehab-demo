@@ -183,7 +183,7 @@
 
 .tl-time { font-size: var(--t-md); font-weight: 620; color: var(--ink-2); letter-spacing: .01em; }
 .tl-title { font-size: var(--t-base); font-weight: 600; margin-bottom: 2px; }
-.tl-desc { font-size: var(--t-sm); color: var(--ink-3); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-desc { font-size: var(--t-sm); color: var(--ink-3); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; line-height: 1.5; }
 .tl-actions { display: flex; align-items: center; gap: 12px; }
 
 /* ---------------- 指导消息 ---------------- */
@@ -545,8 +545,15 @@
 .upload-bar { height: 6px; border-radius: 3px; background: var(--surface-3); margin-top: 16px; overflow: hidden; }
 .upload-fill { height: 100%; background: linear-gradient(90deg, var(--green-600), var(--green-700)); border-radius: 3px; transition: width .14s linear; }
 
-.chip-link { transition: background .15s, color .15s; }
-.chip-link:hover { background: var(--green-100); color: var(--green-700); }
+/* 示范视频入口：原来是灰底小 chip，混在描述里认不出是可点的 */
+.chip-link {
+  padding: 4px 11px !important;
+  background: var(--teal-50); color: var(--teal-700);
+  border: 1px solid var(--teal-100); font-weight: 600;
+  line-height: 1.5; transition: background .15s, border-color .15s;
+}
+.chip-link svg { flex: none; }
+.chip-link:hover { background: var(--teal-100); border-color: var(--teal-300); }
 
 /* ---------------- 患者详情 ---------------- */
 

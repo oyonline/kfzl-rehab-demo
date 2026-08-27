@@ -153,8 +153,8 @@ export const videos: VideoAsset[] = [
   },
 ]
 
-/** 今日任务模板：对应会上确认的 9 点 / 2 点 / 5 点节奏，另加早间服药 */
-export const taskDefs: TaskDef[] = [
+/** 今日任务模板。注意：对外导出的 taskDefs 已按时间排序，见文件末尾 */
+const RAW_TASKS: TaskDef[] = [
   {
     id: 'task-med-morning',
     patientId: PATIENT_ID,
@@ -193,6 +193,16 @@ export const taskDefs: TaskDef[] = [
     origin: 'therapist_confirmed',
   },
   {
+    id: 'task-vitals',
+    patientId: PATIENT_ID,
+    kind: 'record',
+    title: '测量并记录血压血糖',
+    scheduledTime: '12:00',
+    instruction: '午餐前测量，测前安静休息 5 分钟，坐位、手臂与心脏同高。',
+    cautions: ['把数值和测量时间一起记下来', '数值异常时先复测一次再反馈康复师'],
+    origin: 'therapist_confirmed',
+  },
+  {
     id: 'task-balance',
     patientId: PATIENT_ID,
     kind: 'training',
@@ -205,7 +215,28 @@ export const taskDefs: TaskDef[] = [
     durationMin: 12,
     origin: 'therapist_confirmed',
   },
+  {
+    id: 'task-night-care',
+    patientId: PATIENT_ID,
+    kind: 'training',
+    title: '睡前翻身与皮肤检查',
+    scheduledTime: '20:00',
+    instruction: '按视频要领协助翻身，同时检查骶尾部与足跟皮肤有无发红。',
+    cautions: ['发现皮肤发红且按压不褪色，请拍照告知康复师', '避免牵拉患侧上肢'],
+    videoId: 'v-transfer',
+    reps: '翻身 1 次 + 皮肤检查',
+    durationMin: 6,
+    origin: 'therapist_confirmed',
+  },
 ]
+
+/**
+ * 按计划时间排序后导出。
+ *
+ * 时间轴、康复师端执行表、日历明细都直接遍历这个数组，
+ * 若依赖书写顺序，新增一条任务插错位置就会让 12:00 排到 14:00 后面（曾实测踩到）。
+ */
+export const taskDefs: TaskDef[] = [...RAW_TASKS].sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
 
 /* ---------- 历史打卡：为打卡日历提供演示数据 ---------- */
 
