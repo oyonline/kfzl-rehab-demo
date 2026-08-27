@@ -55,7 +55,8 @@ export function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () =>
         </header>
 
         <div className="drawer-body">
-          {/* 1 基本信息 */}
+          {/* 1 基本信息 + 功能情况（并排） */}
+          <div className="sec-row">
           <section className="sec">
             <div className="sec-t">基本信息</div>
             <dl className="kv">
@@ -67,6 +68,19 @@ export function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () =>
               <dt>辅具</dt><dd>{patient.assistiveDevices.join('、')}</dd>
             </dl>
           </section>
+
+          {/* 功能与风险 —— 与基本信息并排 */}
+          <section className="sec">
+            <div className="sec-t">功能情况与风险</div>
+            <dl className="kv">
+              <dt>患侧</dt><dd>{patient.functionStatus.affectedSide}</dd>
+              <dt>活动转移</dt><dd>{patient.functionStatus.mobility}</dd>
+              <dt>吞咽</dt><dd>{patient.functionStatus.swallowing}</dd>
+              <dt>认知沟通</dt><dd>{patient.functionStatus.cognition}</dd>
+              <dt>风险提示</dt><dd>{patient.functionStatus.risks.join(' · ')}</dd>
+            </dl>
+          </section>
+          </div>
 
           {/* 2 入院记录 */}
           <section className="sec">
@@ -102,18 +116,6 @@ export function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
               ))}
             </div>
-          </section>
-
-          {/* 4 功能与风险 */}
-          <section className="sec">
-            <div className="sec-t">功能情况与风险</div>
-            <dl className="kv">
-              <dt>患侧</dt><dd>{patient.functionStatus.affectedSide}</dd>
-              <dt>活动转移</dt><dd>{patient.functionStatus.mobility}</dd>
-              <dt>吞咽</dt><dd>{patient.functionStatus.swallowing}</dd>
-              <dt>认知沟通</dt><dd>{patient.functionStatus.cognition}</dd>
-              <dt>风险提示</dt><dd>{patient.functionStatus.risks.join(' · ')}</dd>
-            </dl>
           </section>
 
           {/* 5 评估记录 */}

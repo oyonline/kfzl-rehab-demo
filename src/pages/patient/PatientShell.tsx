@@ -200,7 +200,9 @@ function Ring({ done, total }: { done: number; total: number }) {
         />
       </svg>
       <div className="ring-label num" style={{ color: '#fff' }}>
-        {done}<small> / {total}</small>
+        {/* 必须包一层 span：ring-label 是 grid 容器，裸文字节点与 <small>
+            会被当成两个格子上下排，导致 "/ 4" 掉到圆环底部 */}
+        <span>{done}<small>/{total}</small></span>
       </div>
     </div>
   )
