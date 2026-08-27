@@ -6,6 +6,12 @@ import { IconPlay } from '../../components/Icons'
 export function VideoLibraryView() {
   return (
     <div className="stack">
+      <div className="crumb">
+        <Link to="/patient">今日安排</Link>
+        <span>/</span>
+        <span>训练视频</span>
+      </div>
+
       <section className="card card-pad">
         <div className="eyebrow">训练视频</div>
         <h2 className="card-title">康复师为她安排的训练</h2>

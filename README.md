@@ -51,7 +51,9 @@ src/pages/patient/   老人 / 家属端：今日、康复咨询、打卡日历�
 src/pages/therapist/ 康复师端
 ```
 
-家属端五页：`/patient`（今日）、`/patient/videos`（训练视频）、`/patient/chat`（康复咨询）、`/patient/calendar`（打卡日历）、`/patient/guidance`（饮食与健康）。
+家属端顶部导航四项：`/patient`（今日）、`/patient/chat`（康复咨询）、`/patient/calendar`（打卡日历）、`/patient/guidance`（饮食与健康）。
+
+训练视频**不占顶部导航**：从今日安排的任务卡点「示范视频」进入 `/patient/videos/:id`，或从今日安排标题旁的「全部训练视频」进入 `/patient/videos`。入口跟着任务走，符合“点开任务节点播放示范视频”的原始要求。
 
 康复师端四页：`/therapist`（随访概览）、`/therapist/consult`（咨询记录）、`/therapist/adherence`（依从性）、`/therapist/guidance`（指导记录）。
 

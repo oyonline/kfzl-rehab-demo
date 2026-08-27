@@ -83,7 +83,12 @@ export function TodayView() {
             <div className="eyebrow">今日安排</div>
             <h2 className="card-title">按康复师制定的计划执行</h2>
           </div>
-          <span className="chip chip-brand num">{done} / {total}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <Link to="/patient/videos" className="card-note" style={{ color: 'var(--green-700)', fontWeight: 550 }}>
+              全部训练视频
+            </Link>
+            <span className="chip chip-brand num">{done} / {total}</span>
+          </span>
         </div>
 
         <div className="timeline">

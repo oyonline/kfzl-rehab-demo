@@ -14,7 +14,6 @@ import '../../styles/app.css'
 
 const NAV = [
   { to: '/patient', label: '今日', end: true },
-  { to: '/patient/videos', label: '训练视频' },
   { to: '/patient/chat', label: '康复咨询' },
   { to: '/patient/calendar', label: '打卡日历' },
   { to: '/patient/guidance', label: '饮食与健康' },

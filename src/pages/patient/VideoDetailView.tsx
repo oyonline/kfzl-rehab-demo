@@ -26,7 +26,7 @@ export function VideoDetailView() {
   return (
     <div className="stack">
       <div className="crumb">
-        <Link to="/patient/videos">训练视频</Link>
+        <Link to="/patient">今日安排</Link>
         <span>/</span>
         <span>{video.title}</span>
       </div>
