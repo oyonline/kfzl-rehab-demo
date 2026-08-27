@@ -9,13 +9,13 @@ interface Props {
   title: string
   subtitle: string
   home: string
-  otherLabel: string
-  otherPath: string
+  /** 页脚提示语，按角色不同；账号与入口地址不上屏，见 README */
+  hint: string
   skin: 'warm' | 'cool'
 }
 
 /** 账号 + 密码登录，无验证码、无扫码、无第三方授权 */
-export function LoginPage({ role, title, subtitle, home, otherLabel, otherPath, skin }: Props) {
+export function LoginPage({ role, title, subtitle, home, hint, skin }: Props) {
   const nav = useNavigate()
   const cred = DEMO_CREDENTIALS[role]
   const [username, setUsername] = useState(cred.username)
@@ -55,12 +55,8 @@ export function LoginPage({ role, title, subtitle, home, otherLabel, otherPath, 
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--t-xs)', color: 'var(--ink-4)', lineHeight: 1.9 }}>
-          {cred.username} / {cred.password}
-          {' · '}
-          <a href={otherPath} style={{ color: 'var(--green-600)' }}>{otherLabel}</a>
-          <br />
-          本系统用于康复服务能力展示，案例人物与数据均为虚构。
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--t-xs)', color: 'var(--ink-4)' }}>
+          {hint}
         </p>
       </div>
     </div>

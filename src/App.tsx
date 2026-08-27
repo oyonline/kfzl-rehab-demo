@@ -25,8 +25,7 @@ export default function App() {
               subtitle="家属登录"
               home="/patient"
               skin="warm"
-              otherLabel="康复师端入口"
-              otherPath="/therapist/login"
+              hint="忘记密码请联系您的康复师"
             />
           }
         />
@@ -48,8 +47,7 @@ export default function App() {
               subtitle="远程随访与指导"
               home="/therapist"
               skin="cool"
-              otherLabel="家属端入口"
-              otherPath="/patient/login"
+              hint="账号由所在机构统一分配"
             />
           }
         />
