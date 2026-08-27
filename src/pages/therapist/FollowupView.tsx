@@ -1,12 +1,14 @@
-import { patient, taskDefs, toISODate } from '../../data/seed'
+import { patient, taskDefs, toISODate, videos } from '../../data/seed'
+import { VideoStage } from '../../components/VideoStage'
 import { effectiveStatus, todayCheckIns, useDemoState } from '../../store/store'
-import { IconAlert, IconCheck, IconClock } from '../../components/Icons'
+import { IconAlert, IconCheck, IconClock, IconPlay } from '../../components/Icons'
 
 export function FollowupView() {
   const state = useDemoState()
   const today = toISODate(new Date())
   const rows = todayCheckIns(state, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
   const done = rows.filter((r) => r.status === 'done').length
+  const uploads = [...state.uploads].reverse()
 
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -62,6 +64,11 @@ export function FollowupView() {
                       家属反馈：{checkIn.note}
                     </div>
                   )}
+                  {state.uploads.some((u) => u.taskId === task.id && u.date === today) && (
+                    <span className="chip chip-brand" style={{ marginTop: 5, padding: '2px 9px' }}>
+                      <IconPlay size={10} /> 已回传视频
+                    </span>
+                  )}
                 </td>
                 <td style={{ color: 'var(--ink-3)' }}>{task.reps ?? '—'}</td>
                 <td>
@@ -78,6 +85,38 @@ export function FollowupView() {
           </tbody>
         </table>
       </section>
+      {uploads.length > 0 && (
+        <section className="card card-pad">
+          <div className="card-hd">
+            <div>
+              <div className="eyebrow">训练回传</div>
+              <h2 className="card-title">家属上传的训练视频</h2>
+            </div>
+            <span className="card-note num">共 {uploads.length} 条</span>
+          </div>
+
+          <div className="stack" style={{ gap: 16 }}>
+            {uploads.map((u) => {
+              const task = taskDefs.find((t) => t.id === u.taskId)
+              const v = videos.find((x) => x.id === u.playbackVideoId)
+              return (
+                <div key={u.id}>
+                  {v && <VideoStage video={v} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+                    <span className="upload-ico" style={{ width: 34, height: 34, fontSize: 10 }}>MP4</span>
+                    <span style={{ flex: 1 }}>
+                      <div className="upload-name">{u.filename}</div>
+                      <div className="upload-size num">
+                        {u.sizeLabel} · {task?.title} · {new Date(u.uploadedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

@@ -120,6 +120,7 @@ export const videos: VideoAsset[] = [
     target: '偏瘫恢复期居家老人',
     goal: '减少照护者腰部负担，降低跌倒与压疮风险',
     cautions: ['动作前先说明，让老人有准备', '避免牵拉患侧上肢'],
+    durationSec: 165,
     origin: 'placeholder',
   },
   {
@@ -129,6 +130,7 @@ export const videos: VideoAsset[] = [
     target: '进食呛咳的恢复期老人',
     goal: '改善吞咽启动，降低误吸风险',
     cautions: ['进食后 30 分钟内不做', '出现明显呛咳立即停止并联系康复师'],
+    durationSec: 132,
     origin: 'placeholder',
   },
   {
@@ -138,6 +140,7 @@ export const videos: VideoAsset[] = [
     target: '可维持短时坐位的偏瘫老人',
     goal: '延长坐位耐受时间，为站立转移做准备',
     cautions: ['全程需 1 人在旁保护', '出现头晕立即停止'],
+    durationSec: 198,
     origin: 'placeholder',
   },
 ]

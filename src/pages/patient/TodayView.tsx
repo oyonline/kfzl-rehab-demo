@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { patient, therapist, toISODate, videos } from '../../data/seed'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
 import { IconActivity, IconAlert, IconCheck, IconClock, IconPill, IconPlay } from '../../components/Icons'
@@ -106,7 +107,11 @@ export function TodayView() {
                     </div>
                     <div className="tl-desc">
                       <span>{task.reps ?? task.instruction}</span>
-                      {video && <span className="chip" style={{ padding: '2px 9px' }}><IconPlay size={10} /> 示范视频</span>}
+                      {video && (
+                        <Link className="chip chip-link" to={`/patient/videos/${video.id}`} style={{ padding: '2px 9px' }}>
+                          <IconPlay size={10} /> 示范视频
+                        </Link>
+                      )}
                     </div>
                     {status === 'difficulty' && checkIn?.note && (
                       <div className="tl-desc" style={{ marginTop: 6, color: 'var(--clay-700)' }}>

@@ -8,10 +8,13 @@ import { TodayView } from './TodayView'
 import { ChatView } from './ChatView'
 import { CheckinCalendar } from '../../components/CheckinCalendar'
 import { GuidanceView } from './GuidanceView'
+import { VideoLibraryView } from './VideoLibraryView'
+import { VideoDetailView } from './VideoDetailView'
 import '../../styles/app.css'
 
 const NAV = [
   { to: '/patient', label: '今日', end: true },
+  { to: '/patient/videos', label: '训练视频' },
   { to: '/patient/chat', label: '康复咨询' },
   { to: '/patient/calendar', label: '打卡日历' },
   { to: '/patient/guidance', label: '饮食与健康' },
@@ -75,6 +78,8 @@ export function PatientShell() {
 
         <Routes>
           <Route index element={<TodayView />} />
+          <Route path="videos" element={<VideoLibraryView />} />
+          <Route path="videos/:id" element={<VideoDetailView />} />
           <Route path="chat" element={<ChatView />} />
           <Route path="calendar" element={<CheckinCalendar />} />
           <Route path="guidance" element={<GuidanceView />} />

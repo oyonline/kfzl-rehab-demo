@@ -42,6 +42,7 @@ src/data/types.ts    双端共用数据契约（已冻结，改动须两端同�
 src/data/seed.ts     虚构案例、入院记录、任务计划、视频清单、打卡历史
 src/data/qa.ts       咨询预设答案 ⚠️ 待专业审核
 src/data/guidance.ts 饮食与健康指导 ⚠️ 待专业审核
+src/data/videoSteps.ts 训练分步说明 ⚠️ 待专业审核
 src/store/store.ts   localStorage + 跨标签页订阅
 src/auth/auth.ts     账号密码登录（sessionStorage）
 src/styles/          设计令牌与组件样式
@@ -50,7 +51,15 @@ src/pages/patient/   老人 / 家属端：今日、康复咨询、打卡日历�
 src/pages/therapist/ 康复师端
 ```
 
-家属端四个页面：`/patient`（今日）、`/patient/chat`、`/patient/calendar`、`/patient/guidance`。
+家属端五页：`/patient`（今日）、`/patient/videos`（训练视频）、`/patient/chat`（康复咨询）、`/patient/calendar`（打卡日历）、`/patient/guidance`（饮食与健康）。
+
+康复师端四页：`/therapist`（随访概览）、`/therapist/consult`（咨询记录）、`/therapist/adherence`（依从性）、`/therapist/guidance`（指导记录）。
+
+## 视频与上传的两个约定
+
+**视频未到位时不做假播放。** `videos[].src` 为空时，播放区显示海报并引导看下方分步图文；填入 src 后 `<video>` 播放器自动接管，图文作为文字说明保留。
+
+**上传是模拟的**（v0.2 §4.2 裁决）：只取文件名与大小这类元数据，**不读取文件内容、不落盘、不上传任何数据**。未选择文件时用一个默认文件名，保证现场即使没备好素材也能演示这一步。
 
 打卡历史用固定模式生成而非随机数，保证每次演示看到的日历完全一致，可反复排练。
 
@@ -72,11 +81,12 @@ src/pages/therapist/ 康复师端
 |---|---|---|
 | `src/data/qa.ts` | 咨询预设答案（呛咳、训练做不动、血压偏高）与自由提问兜底 | REVIEW REQUIRED |
 | `src/data/guidance.ts` | 饮食与健康指导四张卡片 | REVIEW REQUIRED |
+| `src/data/videoSteps.ts` | 三个训练的分步动作说明 | REVIEW REQUIRED |
 
 起草时遵循的保守原则：不给具体剂量、不改变食物性状比例、不调整训练强度，一律引导"记录 + 观察 + 联系康复师"，每条都带明确的升级条件。康复师审核后直接改写内容并删除文件头部的 REVIEW 标记。
 
 ### 素材
 
-- 训练示范视频（坐位/下肢、吞咽、翻身转移）尚未到位，当前为占位，到位后填入 `src/data/seed.ts` 的 `videos[].src`；
+- 训练示范视频（坐位/下肢、吞咽、翻身转移）尚未到位，到位后填入 `src/data/seed.ts` 的 `videos[].src`，播放器会自动接管；
 - 评估量表分值（洼田饮水、MMSE、MMT、Braden）由康复师评估后填入 `assessments[].value`，当前档案页显示为「待录入」；
 - 用药剂量同样待专业人员提供，当前只显示药名与服用时间。
