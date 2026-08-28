@@ -1,0 +1,25 @@
+[project]
+sub_id = "db107fc8"
+name = "home-rehabilitation-assistant"
+requires = ["nodejs-24"]
+project_type = "web"
+version = "0.0.35"
+entrypoint = "index.html"
+
+[preview]
+preview_enable = "enabled"
+
+[dev]
+build = ["bash", "scripts/dev-build.sh"]
+run = ["bash", "scripts/dev-run.sh"]
+
+[deploy]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]
+
+[deploy.profile]
+kind = "service"
+flavor = "web"
+
+[subprojects]
+path = ["."]
