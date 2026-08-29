@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "coze-coding-dev-sdk": "^0.7.27",
+    "coze-coding-dev-sdk": "0.7.27",
     "express": "^5.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

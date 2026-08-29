@@ -1,7 +1,6 @@
 import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -10,25 +9,86 @@ const PROJECT_ROOT = join(__dirname, '..')
 const app = express()
 const PORT = process.env.PORT || 5000
 
+/**
+ * AI 开关 —— 一个仓两种跑法的分界点。
+ *
+ * 扣子容器里有 COZE_WORKLOAD_IDENTITY_API_KEY，自动开启；
+ * 本地没有，自动关闭，`/api/chat` 立刻返回 503，前端回落到预设答案。
+ *
+ * 关键在「立刻」：本地绝不能真去调模型再等超时 —— 现场网络不可控，
+ * 家属问一句话转圈半分钟，演示就砸了。
+ * 需要强制覆盖时用 AI_ENABLED=1 / AI_ENABLED=0。
+ */
+const AI_ENABLED = (() => {
+  const explicit = process.env.AI_ENABLED
+  if (explicit != null && explicit !== '') {
+    return explicit === '1' || explicit.toLowerCase() === 'true'
+  }
+  return Boolean(process.env.COZE_WORKLOAD_IDENTITY_API_KEY)
+})()
+
+/** SDK 默认超时时长未知（扣子侧自陈未验证），因此必须显式给死 */
+const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS ?? 15000)
+
 app.use(express.json())
 
-// LLM 聊天接口
+app.get('/api/ai-status', (_req, res) => {
+  res.json({ enabled: AI_ENABLED, timeoutMs: LLM_TIMEOUT_MS })
+})
+
+/**
+ * 本地验流式 UI 用的模拟流，默认关闭，只认 AI_MOCK=1。
+ * 演示与部署都不会走到这里 —— 它存在的唯一目的是：
+ * 本地没有模型凭据时，仍能把「分块到达」这个行为复现出来验证前端。
+ */
+const AI_MOCK = process.env.AI_MOCK === '1'
+
 app.post('/api/chat', async (req, res) => {
-  console.log('API /api/chat called with:', req.body)
+  if (AI_MOCK) {
+    const canned =
+      '您好，训练后腿部发酸多数属于正常的延迟性肌肉酸痛。\n' +
+      '先观察两点：**酸胀感休息后能减轻**，通常可以减量继续；如果是**关节痛、刺痛或肿胀**，请立即停止。\n' +
+      '今天可以先做这些：轻柔按摩大腿小腿肌肉、温热毛巾敷 10–15 分钟、下次训练前先热身。\n' +
+      '出现下列任一情况请联系康复师：酸痛超过两天、关节肿胀发红、影响站立行走、伴随头晕胸闷。'
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
+    let i = 0
+    const push = () => {
+      if (i >= canned.length) {
+        res.write('data: [DONE]\n\n')
+        return res.end()
+      }
+      // 故意用不均匀的块长，真实流就是这样一阵一阵来的
+      const size = [2, 5, 11, 3, 18, 7][i % 6]
+      res.write(`data: ${JSON.stringify({ content: canned.slice(i, i + size) })}\n\n`)
+      i += size
+      setTimeout(push, 90)
+    }
+    push()
+    return
+  }
+
+  if (!AI_ENABLED) {
+    // 立刻返回，不触网。前端据此回落到预设答案。
+    return res.status(503).json({ error: 'ai_disabled', message: '本机未启用 AI，使用预设答案' })
+  }
+
   try {
     const { messages, model } = req.body
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages 不能为空' })
     }
-
-    // 必须至少有一条 user 消息
     if (!messages.some((m: any) => m.role === 'user')) {
       return res.status(400).json({ error: 'messages 必须包含至少一条 user 消息' })
     }
 
+    // 动态引入：本地关掉 AI 时完全不加载这个 3.8MB 的包
+    const { LLMClient, Config, HeaderUtils } = await import('coze-coding-dev-sdk')
+
     const customHeaders = HeaderUtils.extractForwardHeaders(req.headers)
-    const config = new Config()
+    const config = new Config({ timeout: LLM_TIMEOUT_MS })
     const client = new LLMClient(config, customHeaders)
 
     const stream = client.stream(messages, {
@@ -36,21 +96,41 @@ app.post('/api/chat', async (req, res) => {
       temperature: 0.7,
     })
 
-    // SSE 流式输出
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
 
-    for await (const chunk of stream) {
-      if (chunk.content) {
-        res.write(`data: ${JSON.stringify({ content: chunk.content.toString() })}\n\n`)
+    // 整条流也要有上限：SDK 的 timeout 管的是单次请求，
+    // 流中途卡住不发新 chunk 时它不一定会断。
+    let closed = false
+    const hardStop = setTimeout(() => {
+      if (closed) return
+      closed = true
+      res.write('data: [DONE]\n\n')
+      res.end()
+    }, LLM_TIMEOUT_MS * 2)
+
+    try {
+      for await (const chunk of stream) {
+        if (closed) break
+        if (chunk.content) {
+          res.write(`data: ${JSON.stringify({ content: chunk.content.toString() })}\n\n`)
+        }
+      }
+    } finally {
+      clearTimeout(hardStop)
+      if (!closed) {
+        closed = true
+        res.write('data: [DONE]\n\n')
+        res.end()
       }
     }
-
-    res.write('data: [DONE]\n\n')
-    res.end()
   } catch (error: any) {
     console.error('LLM API error:', error)
+    if (res.headersSent) {
+      res.end()
+      return
+    }
     res.status(500).json({
       error: error.message || 'LLM 调用失败',
       statusCode: error.statusCode,
@@ -62,13 +142,13 @@ app.post('/api/chat', async (req, res) => {
 app.use(express.static(join(PROJECT_ROOT, 'dist')))
 
 // SPA fallback：前端路由
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(join(PROJECT_ROOT, 'dist', 'index.html'))
 })
-app.get(/^\/(patient|therapist)(\/.*)?$/, (req, res) => {
+app.get(/^\/(patient|therapist)(\/.*)?$/, (_req, res) => {
   res.sendFile(join(PROJECT_ROOT, 'dist', 'index.html'))
 })
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`)
+  console.log(`Server running on http://0.0.0.0:${PORT}  (AI ${AI_ENABLED ? '已启用' : '未启用，走预设答案'})`)
 })
