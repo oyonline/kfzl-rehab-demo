@@ -82,6 +82,7 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               <dt>吞咽</dt><dd>{patient.functionStatus.swallowing}</dd>
               <dt>认知沟通</dt><dd>{patient.functionStatus.cognition}</dd>
               <dt>风险提示</dt><dd>{patient.functionStatus.risks.join(' · ')}</dd>
+              {patient.psychosocial && <><dt>心理状态</dt><dd>{patient.psychosocial}</dd></>}
             </dl>
           </section>
           </div>
@@ -89,7 +90,7 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
           {/* 2 入院记录 */}
           <section className="sec">
             <div className="sec-t">入院记录</div>
-            <div className="sec-d">{a.facility} · {a.department} · {a.admittedOn} 至 {a.dischargedOn}（住院 14 天）</div>
+            <div className="sec-d">{a.facility} · {a.department} · {a.admittedOn} 至 {a.dischargedOn}（住院 {Math.round((Date.parse(a.dischargedOn) - Date.parse(a.admittedOn)) / 86400000)} 天）</div>
             <dl className="kv">
               <dt>主诉</dt><dd>{a.chiefComplaint}</dd>
               <dt>入院诊断</dt><dd>{a.admissionDiagnosis.join('；')}</dd>

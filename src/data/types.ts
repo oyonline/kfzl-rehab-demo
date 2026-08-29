@@ -108,6 +108,12 @@ export interface Patient {
     cognition: string
     risks: string[]
   }
+  /**
+   * 心理社会状况。评估表里这一栏与肌力、吞咽同等重要 ——
+   * 情绪直接影响训练依从性，居家康复尤其如此。
+   * 单列而不塞进 pastHistory：它不是既往史，是当前状态。
+   */
+  psychosocial?: string
   medications: Medication[]
   assessments: Assessment[]
   goals: {

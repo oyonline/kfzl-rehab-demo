@@ -13,8 +13,10 @@ interface Account {
 }
 
 const ACCOUNTS: Account[] = [
-  { username: 'limin', password: '123456', role: 'family', displayName: '李敏（女儿）' },
-  { username: 'wangxiulan', password: '123456', role: 'therapist', displayName: '王秀兰' },
+  // 甲方资料里家属只称「陈女士（女儿）」、康复师只称「小婷」，未给全名，
+  // 因此账号名也只用姓／昵称，不替他们编造名字。
+  { username: 'chen', password: '123456', role: 'family', displayName: '陈女士（女儿）' },
+  { username: 'xiaoting', password: '123456', role: 'therapist', displayName: '小婷' },
 ]
 
 const KEY = 'kfzl.session.v1'
@@ -66,6 +68,6 @@ export function signOut() {
 }
 
 export const DEMO_CREDENTIALS = {
-  family: { username: 'limin', password: '123456' },
-  therapist: { username: 'wangxiulan', password: '123456' },
+  family: { username: 'chen', password: '123456' },
+  therapist: { username: 'xiaoting', password: '123456' },
 }

@@ -15,7 +15,7 @@ export interface VideoStep {
 
 export const VIDEO_STEPS: Record<string, VideoStep[]> = {
   'v-transfer': [
-    { title: '准备', detail: '床面调平，移开床边障碍物，照护者站在她的患侧（右侧）。先告诉她要做什么，让她有准备。' },
+    { title: '准备', detail: '床面调平，移开床边障碍物，照护者站在她的患侧（左侧）。先告诉她要做什么，让她有准备。' },
     { title: '摆位', detail: '协助她双手交叉相握，患手在下；双膝屈曲，双脚踩住床面。' },
     { title: '翻身', detail: '照护者一手托肩、一手托髋，顺着她自己发力的方向带动，向健侧翻身。全程避免牵拉患侧上肢。' },
     { title: '坐起', detail: '侧卧后双腿移出床沿，照护者托住肩部协助她用健侧手撑床坐起，不要拉她的手臂。' },

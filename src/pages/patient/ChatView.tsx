@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
-import { patient, taskDefs, therapist } from '../../data/seed'
+import { PLAN_CONFIRMED_ON, patient, taskDefs, therapist } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
 import { ThinkingTrace, useTypewriter, type TraceStep } from '../../components/ThinkingTrace'
@@ -76,7 +76,7 @@ function RichText({ text }: { text: string }) {
 function traceFor(q: PresetQA | null): TraceStep[] {
   return [
     { label: '读取康复档案', detail: `${patient.name} · ${patient.diagnosis.strokeType} · ${patient.diagnosis.stage}` },
-    { label: '结合康复师确认的计划', detail: `${patient.assessments[0].date} 制定，含今日 ${taskDefs.length} 项安排` },
+    { label: '结合康复师确认的计划', detail: `${PLAN_CONFIRMED_ON} 制定，含今日 ${taskDefs.length} 项安排` },
     {
       label: '按安全边界组织回答',
       detail: q?.escalateHint ?? '超出可安全回答范围的部分交回康复师',

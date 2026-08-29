@@ -18,6 +18,10 @@ export function FollowupView() {
   })
   const weekRate = Math.round((last7.reduce((a, b) => a + b, 0) / (taskDefs.length * 7)) * 100)
 
+  // 不写死：换病例后写死的文案会变成假话（曾把洼田 Ⅱ 级写成「偶有呛咳」）
+  const swallowAssessment = patient.assessments.find((a) => a.name.includes('洼田'))
+  const swallowBrief = swallowAssessment ? `洼田 ${swallowAssessment.value}` : patient.functionStatus.swallowing
+
   return (
     <div className="stack">
       <section className="card card-pad">
@@ -25,7 +29,7 @@ export function FollowupView() {
           <Stat k="今日完成" v={`${done}`} unit={`/ ${rows.length}`} />
           <Stat k="近 7 日完成率" v={`${weekRate}`} unit="%" />
           <Stat k="患侧" v={patient.functionStatus.affectedSide} small />
-          <Stat k="吞咽" v="进食稀液偶有呛咳" small />
+          <Stat k="吞咽" v={swallowBrief} small />
         </div>
       </section>
 
