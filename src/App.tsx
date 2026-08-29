@@ -21,8 +21,8 @@ export default function App() {
           element={
             <LoginPage
               role="family"
-              title="居家康复助手"
-              subtitle="家属登录"
+              title="银康安馨"
+              subtitle="居家康复智能助手 · 家属登录"
               home="/patient"
               skin="warm"
               hint="忘记密码请联系您的康复师"
@@ -43,8 +43,8 @@ export default function App() {
           element={
             <LoginPage
               role="therapist"
-              title="康复师工作台"
-              subtitle="远程随访与指导"
+              title="银康安馨"
+              subtitle="康复师工作台 · 远程随访与指导"
               home="/therapist"
               skin="cool"
               hint="账号由所在机构统一分配"

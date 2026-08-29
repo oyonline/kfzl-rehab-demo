@@ -29,6 +29,13 @@ export function PatientShell() {
   const state = useDemoState()
   const unread = state.guidances.filter((g) => !g.readByFamily).length
 
+  // 只取家属可见、且给了短形式的量表；顺序按 TILE_ORDER，不依赖 seed 的书写顺序
+  const assessTiles = TILE_ORDER
+    .map((n) => patient.assessments.find((a) => a.name === n))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a?.tile && a.visibleToFamily))
+    .map((a) => a.tile!)
+  const assessDate = patient.assessments.find((a) => a.tile)?.date ?? ''
+
   return (
     <div className="app" data-skin="warm">
       <header className="topbar">
@@ -36,8 +43,8 @@ export function PatientShell() {
           <div className="brand">
             <span className="brand-mark"><IconLeaf size={17} /></span>
             <span>
-              <div className="brand-name">居家康复助手</div>
-              <div className="brand-sub">科学康复 · 每日陪伴</div>
+              <div className="brand-name">银康安馨</div>
+              <div className="brand-sub">居家康复智能助手</div>
             </span>
           </div>
           <nav className="nav">
@@ -65,32 +72,44 @@ export function PatientShell() {
       </header>
 
       <main className="page" style={{ display: 'grid', gridTemplateColumns: '332px 1fr', gap: 22, alignItems: 'start' }}>
+        {/*
+          档案卡三段式：身份 → 评估摘要 → 今日须注意。
+          这根左栏演示全程常驻可见，是评委看得最久的一块，所以只放三样东西：
+          她是谁、现在什么水平、今天要当心什么。
+          诊断细节、活动能力全文、入院经过等长文都收进「查看完整档案」——
+          放在这里既读不完，也把真正值钱的量表分值挤没了。
+        */}
         <aside className="card profile">
+          {/* ① 身份 */}
           <div className="profile-hd">
             <div className="avatar">{patient.name[0]}</div>
             <div>
               <div className="profile-name">
                 {patient.name}
-                <span className="chip chip-brand" style={{ marginLeft: 10, verticalAlign: 4 }}>{patient.diagnosis.stage.replace('恢复期·', '')}</span>
+                <span className="chip chip-brand" style={{ marginLeft: 10, verticalAlign: 4 }}>{patient.diagnosis.stage.replace('居家康复·', '')}</span>
               </div>
-              <div className="profile-meta">
-                {patient.gender} · {patient.ageBand}
-                <span className="sep" />身高 {patient.heightCm}cm
-                <span className="sep" />体重 {patient.weightKg}kg
-              </div>
+              {/* 不放身高体重：甲方未提供，是合成值，不值得占这个位置 */}
+              <div className="profile-meta">{patient.gender} · {patient.ageBand}</div>
             </div>
           </div>
 
-          <div className="fgroup">基本情况</div>
-          <dl className="facts">
-            <Fact k="诊断" v={patient.diagnosis.strokeType} />
-            <Fact k="发病时间" v={patient.diagnosis.onsetDate} />
-          </dl>
+          {/* 诊断单独成行：332px 宽里跟「女 · 82 岁」挤在一起会从词中间断开 */}
+          <div className="profile-dx">{patient.diagnosis.strokeType}</div>
 
-          <div className="fgroup">康复与活动</div>
-          <dl className="facts">
-            <Fact k="活动能力" v={patient.functionStatus.mobility} />
-            <Fact k="吞咽情况" v={patient.functionStatus.swallowing} tag="注意" />
+          {/* ② 评估摘要 —— 四张量表的分值，全卡最有说服力的部分 */}
+          <div className="fgroup">评估摘要</div>
+          <div className="assess">
+            {assessTiles.map((t) => (
+              <div className="assess-i" key={t.label}>
+                <div className="assess-k">{t.label}</div>
+                <div className="assess-v num">{t.value}</div>
+                <div className="assess-n">{t.note}</div>
+              </div>
+            ))}
+          </div>
+          <div className="assess-src">{assessDate} · 康复团队评估</div>
+
+          <dl className="facts" style={{ marginTop: 18 }}>
             <div className="fact">
               <dt className="fact-k">合并疾病</dt>
               <dd className="fact-v" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
@@ -105,9 +124,9 @@ export function PatientShell() {
             <IconFile /> 查看完整档案
           </button>
 
-          {/* 安全信息不该埋在字段里 —— 每次打开就该看到 */}
+          {/* ③ 今日须注意 —— 三条各自对应一项评估结论与一项今日任务 */}
           <div className="risk">
-            <div className="risk-t"><IconAlert size={15} /> 风险与注意事项</div>
+            <div className="risk-t"><IconAlert size={15} /> 今日须注意</div>
             <ul>
               {CARE_ALERTS.map((a) => <li key={a}>{a}</li>)}
             </ul>
@@ -129,6 +148,12 @@ export function PatientShell() {
     </div>
   )
 }
+
+/**
+ * 按今日任务的相关度排序：下肢训练→肌力、吞咽操→洼田、
+ * 认知训练→MMSE、皮肤检查→Braden。四项正好对上四项训练。
+ */
+const TILE_ORDER = ['MMT 徒手肌力测试', '洼田饮水试验', 'MMSE 简易智能量表', 'Braden 压疮风险']
 
 function Fact({ k, v, tag }: { k: string; v: string; tag?: string }) {
   return (

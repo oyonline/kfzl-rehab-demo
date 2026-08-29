@@ -735,6 +735,10 @@
 
 .profile-hd { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
 .profile-hd .avatar { width: 62px; height: 62px; border-radius: var(--r); font-size: 24px; margin-bottom: 0; }
+.profile-dx {
+  font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5;
+  padding: 12px 0 0; margin-top: -8px;
+}
 .profile-meta .sep { display: inline-block; width: 1px; height: 11px; background: var(--line-2); margin: 0 9px; vertical-align: -1px; }
 
 .fgroup {
@@ -748,6 +752,16 @@
   background: var(--wait-bg); color: var(--wait);
   font-size: 11px; font-weight: 600;
 }
+
+/* ---------------- 评估摘要方块 ----------------
+   四张量表的分值。档案卡里唯一用大号数字的地方 ——
+   这是全卡最该被一眼看到的信息，其余都比它次要。 */
+.assess { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.assess-i { background: var(--surface); padding: 12px 13px 11px; }
+.assess-k { font-size: var(--t-xs); color: var(--ink-4); letter-spacing: .05em; }
+.assess-v { font-size: 19px; font-weight: 650; color: var(--teal-800); line-height: 1.3; margin-top: 3px; letter-spacing: .01em; }
+.assess-n { font-size: var(--t-xs); color: var(--ink-3); margin-top: 2px; line-height: 1.45; }
+.assess-src { font-size: var(--t-xs); color: var(--ink-4); margin-top: 9px; letter-spacing: .02em; }
 
 .risk {
   margin-top: 18px; padding: 16px 18px; border-radius: var(--r);

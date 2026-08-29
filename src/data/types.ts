@@ -56,6 +56,12 @@ export interface Assessment {
   name: string
   value: string
   level?: string
+  /**
+   * 档案卡上的方块展示用的短形式。量表全名与结论在卡片 332px 宽里放不下，
+   * 但这四个分值恰恰是最该被一眼看到的东西 —— 放在数据里而不是组件里，
+   * 是为了避免改了 seed 而卡片仍显示旧值。
+   */
+  tile?: { label: string; value: string; note: string }
   date: ISODate
   assessor: string
   note: string

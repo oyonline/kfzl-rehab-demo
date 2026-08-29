@@ -32,8 +32,8 @@ export function TherapistShell() {
           <div className="brand">
             <span className="brand-mark"><IconLeaf size={17} /></span>
             <span>
-              <div className="brand-name">康复师工作台</div>
-              <div className="brand-sub">THERAPIST CONSOLE</div>
+              <div className="brand-name">银康安馨</div>
+              <div className="brand-sub">康复师工作台</div>
             </span>
           </div>
           <nav className="nav">
