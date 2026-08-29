@@ -316,6 +316,8 @@
 .kv dd { line-height: 1.6; }
 
 .rule { margin: 16px 0; height: 1px; background: var(--line); border: none; }
+/* 评估结果：分值用正常字重，结论跟在后面退一档，一眼分主次 */
+.tbl-lv { display: block; font-size: var(--t-xs); color: var(--ink-3); font-weight: 400; margin-top: 2px; }
 
 .olist { display: grid; gap: 8px; font-size: var(--t-sm); }
 .olist li { display: flex; gap: 9px; line-height: 1.6; }

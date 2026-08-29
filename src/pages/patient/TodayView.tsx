@@ -178,7 +178,7 @@ export function TodayView() {
                     <textarea
                       className="ta" rows={2} value={note} autoFocus
                       onChange={(e) => setNote(e.target.value)}
-                      placeholder="例：做到一半就说累，右腿抬不起来。"
+                      placeholder="例：做到一半就说累，左腿抬不起来。"
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                       <button className="btn-quiet" onClick={() => setTroubleFor(null)}>取消</button>

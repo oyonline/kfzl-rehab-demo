@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { patient, therapist } from '../data/seed'
+import { HOMECARE_START, patient, therapist } from '../data/seed'
 import type { CareEventKind } from '../data/types'
 import { IconClose } from './Icons'
 
@@ -17,9 +17,10 @@ const KIND_LABEL: Record<CareEventKind, string> = {
  *
  * 不做页面跳转：演示只有 2–3 分钟，跳走再跳回会打断讲解节奏。
  *
- * 评估结果一栏刻意不填数值：量表分值属专业判断，由康复师评估后录入，
- * 本项目不生成（见 KB v0.1 §6 D）。界面上呈现为"待录入"，这同时也
- * 体现了"专业人员保留评估权、AI 不代替评估"的产品主张。
+ * 评估结果由康复师现场评估后录入，本项目不代为判定（KB v0.1 §6 D）。
+ * 2026-08-29 起四张量表已有甲方康复团队的实测值，表格显示真实结果；
+ * 仍未录入的项才显示「待录入」—— 原先是无论有没有值都写死「待录入」，
+ * 导致填实后的分值在完整档案里根本看不到。
  */
 export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onClose: () => void; audience: 'family' | 'therapist' }) {
   useEffect(() => {
@@ -52,7 +53,7 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
           <span>
             <div style={{ fontSize: 'var(--t-md)', fontWeight: 650 }}>{patient.name} · 康复档案</div>
             <div style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-3)' }}>
-              建档 2026-07-02 · 责任康复师 {therapist.name}
+              建档 {HOMECARE_START} · 责任康复师 {therapist.name} · {therapist.title}
             </div>
           </span>
           <button className="drawer-close" onClick={onClose} aria-label="关闭"><IconClose /></button>
@@ -65,27 +66,50 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
             <div className="sec-t">基本信息</div>
             <dl className="kv">
               <dt>性别年龄</dt><dd>{patient.gender} · {patient.ageBand}</dd>
+              <dt>诊断</dt><dd>{patient.diagnosis.strokeType} · {patient.diagnosis.stage}</dd>
+              <dt>合并疾病</dt><dd>{patient.diagnosis.comorbidities.join('、')}</dd>
               <dt>居住情况</dt><dd>{patient.livingSituation}</dd>
-              <dt>主要照护人</dt><dd>{patient.caregiver.name} · {patient.caregiver.relation}</dd>
-              <dt>紧急联系</dt><dd>{patient.emergencyContact.name}（{patient.emergencyContact.relation}） · {patient.emergencyContact.phoneMasked}</dd>
+              {/* 照护人与紧急联系是同一个人，原先分两行写了两遍 */}
+              <dt>照护人</dt>
+              <dd>{patient.caregiver.name}（{patient.caregiver.relation}） · {patient.emergencyContact.phoneMasked}</dd>
               <dt>沟通注意</dt><dd>{patient.communication}</dd>
               <dt>辅具</dt><dd>{patient.assistiveDevices.join('、')}</dd>
             </dl>
           </section>
 
-          {/* 功能与风险 —— 与基本信息并排 */}
+          {/* 功能情况 —— 与基本信息并排。风险与心理移到下方独立整块：
+              一是这两栏原先一短一长，右栏比左栏高出一大截；
+              二是风险是照护者真正要照着做的东西，值得单独一块，
+              不该跟评估描述挤在同一张卡里用「·」串成一段。 */}
           <section className="sec">
-            <div className="sec-t">功能情况与风险</div>
+            <div className="sec-t">功能情况</div>
             <dl className="kv">
               <dt>患侧</dt><dd>{patient.functionStatus.affectedSide}</dd>
               <dt>活动转移</dt><dd>{patient.functionStatus.mobility}</dd>
               <dt>吞咽</dt><dd>{patient.functionStatus.swallowing}</dd>
               <dt>认知沟通</dt><dd>{patient.functionStatus.cognition}</dd>
-              <dt>风险提示</dt><dd>{patient.functionStatus.risks.join(' · ')}</dd>
-              {patient.psychosocial && <><dt>心理状态</dt><dd>{patient.psychosocial}</dd></>}
             </dl>
           </section>
           </div>
+
+          {/* 风险与心理支持 */}
+          <section className="sec">
+            <div className="sec-t">风险与心理支持</div>
+            <div className="sec-d">照护时需要一直放在心上的几条</div>
+            <ul className="olist" style={{ marginTop: 4 }}>
+              {/* 心理那条在下面单独展开，这里不再重复一遍 */}
+              {patient.functionStatus.risks
+                .filter((r) => !patient.psychosocial || !r.includes('情绪'))
+                .map((r) => <li key={r}><span>{r}</span></li>)}
+            </ul>
+            {patient.psychosocial && (
+              <>
+                <hr className="rule" />
+                <div className="sec-t" style={{ fontSize: 'var(--t-sm)' }}>心理状态</div>
+                <p className="prose" style={{ marginTop: 6 }}>{patient.psychosocial}</p>
+              </>
+            )}
+          </section>
 
           {/* 2 入院记录 */}
           <section className="sec">
@@ -141,7 +165,11 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
                     <td style={{ fontWeight: 600 }}>{as.name}</td>
                     <td className="num" style={{ color: 'var(--ink-2)' }}>{as.date}</td>
                     <td style={{ color: 'var(--ink-2)' }}>{as.assessor}</td>
-                    <td style={{ textAlign: 'right' }}><span className="chip">待录入</span></td>
+                    <td style={{ textAlign: 'right' }}>
+                      {as.value && as.value !== '待专业确认'
+                        ? <><b>{as.value}</b>{as.level && <span className="tbl-lv">{as.level}</span>}</>
+                        : <span className="chip">待录入</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>

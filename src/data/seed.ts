@@ -137,9 +137,12 @@ export const patient: Patient = {
     ],
   },
 
+  // 前两条为 SYNTHETIC（甲方未提供急性期记录）—— 标记只能写在注释里。
+  // v0.2 §6.1：演示画面不得出现「演示／合成／占位」字样，
+  // 这两条 detail 里原先带着括号标注，会直接渲染到时间线上。
   careEvents: [
-    { date: '2024-07-07', kind: 'admission', title: '发病入院', detail: '突发左侧肢体无力伴行走不稳，收入神经内科。（SYNTHETIC：甲方未提供急性期记录）' },
-    { date: '2024-07-21', kind: 'discharge', title: '出院', detail: '病情稳定出院，左侧肢体仍遗留功能障碍，转门诊与居家康复。（SYNTHETIC）' },
+    { date: '2024-07-07', kind: 'admission', title: '发病入院', detail: '突发左侧肢体无力伴行走不稳，收入神经内科。' },
+    { date: '2024-07-21', kind: 'discharge', title: '出院', detail: '病情稳定出院，左侧肢体仍遗留功能障碍，转门诊与居家康复。' },
     { date: '2026-07-07', kind: 'assessment', title: '居家康复首次入户评估', detail: '康复师小婷、小周与康复护士小彭上门，完成 MMSE、洼田饮水试验、MMT 与 Braden 四项评估，并记录睡眠、心理与饮食情况。' },
     { date: '2026-08-27', kind: 'homecare', title: '个体化康复训练计划制定', detail: '银康安馨居家康复服务团队据评估结果制定三阶段训练方案：准备期放松降张力、强化期抗阻、步态实用期矫正尖足。' },
     { date: '2026-09-27', kind: 'upcoming', title: '下次复评', detail: '评估左下肢肌力、MMSE 与洼田分级改善情况，据此调整下一阶段计划。' },
