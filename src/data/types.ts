@@ -206,8 +206,17 @@ export interface ChatMessage {
   role: ChatRole
   text: string
   at: ISODateTime
-  /** model=真实大模型返回；preset_fallback=兜底预设（v0.2 §5.4） */
-  answerSource?: 'model' | 'preset_fallback'
+  /**
+   * preset=预设问题直接给出的答案（演示主线，不经模型）；
+   * model=真实大模型返回；preset_fallback=模型失败后回落的预设（v0.2 §5.4）
+   */
+  answerSource?: 'preset' | 'model' | 'preset_fallback'
+  /**
+   * 双源回答的「网络参考信息」块。有值时气泡渲染成上下两块：
+   * 上为通用科普（中性灰），下为团队专业建议（品牌深青绿）。
+   * 只有预设问题才有 —— 真模型吐的是一整段，拆不出两块来。
+   */
+  externalText?: string
   basis?: string[]
   /** 触发转康复师规则（v0.1 §12） */
   escalated?: boolean

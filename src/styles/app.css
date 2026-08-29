@@ -381,6 +381,31 @@
 .bub p:last-child { margin-bottom: 0; }
 .bub strong { font-weight: 650; }
 
+/* ---------------- 双源回答 ----------------
+   甲方需求书 3.1：外部通用科普与团队专业建议分区展示、标注来源。
+   甲方脚本写的是「灰 vs 蓝」，但 v0.2 §6.2 只允许深青绿／橙／红三色，
+   蓝属新增强调色。这里改为「中性灰 vs 品牌深青绿」——
+   两块依然一眼分明，且不破坏设计基线。 */
+.src {
+  margin-top: 10px; padding: 12px 14px 12px 15px;
+  border-radius: var(--r); border-left: 3px solid transparent;
+  font-size: var(--t-sm); line-height: 1.72;
+}
+.src:first-child { margin-top: 0; }
+.src p { margin: 0 0 6px; }
+.src p:last-child { margin-bottom: 0; }
+.src-t {
+  font-size: var(--t-xs); font-weight: 640; letter-spacing: .04em;
+  margin-bottom: 7px;
+}
+/* 外部：通用科普，视觉上退后一层 */
+.src-ext { background: var(--surface-2); border-left-color: var(--line-2); color: var(--ink-3); }
+.src-ext .src-t { color: var(--ink-4); }
+/* 内部：团队专业建议，是这条回答的主体 */
+.src-team { background: var(--teal-50); border-left-color: var(--teal-600); color: var(--ink); }
+.src-team .src-t { color: var(--teal-700); }
+.src-team strong { color: var(--teal-800); }
+
 .basis {
   margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line);
   font-size: var(--t-xs); color: var(--ink-3);

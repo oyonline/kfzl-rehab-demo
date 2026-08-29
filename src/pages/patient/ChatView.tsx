@@ -225,11 +225,32 @@ export function ChatView() {
     setTrace({ steps: traceFor(q), qa: q })
   }
 
-  /** 依据过程走完后调用 LLM */
+  /**
+   * 依据过程走完后出答案。
+   *
+   * 预设问题（演示主线那几道）**两条路都直接出预设，不调模型**：
+   * 模型会润色改写，事先可预审这个最大的好处就没了；而且要等它吐字、
+   * 网络或额度一挂就当场没有。线上那条路多一层公网，风险更高。
+   * 模型留给评委临时问的自由问题 —— 本地无模型时回落到转人工。
+   */
   const onTraceDone = useCallback(() => {
     if (!trace) return
+    const q = trace.qa
+    if (q) {
+      const id = addMessage({
+        role: 'ai',
+        text: q.answer.join('\n'),
+        externalText: q.external?.join('\n'),
+        answerSource: 'preset',
+        basis: q.basis,
+        escalated: q.escalate,
+      })
+      setStreamingId(id)
+      setTrace(null)
+      return
+    }
     const asked = messages[messages.length - 1]?.text ?? ''
-    callLLM(asked, trace.qa)
+    callLLM(asked, null)
     setTrace(null)
   }, [trace, messages])
 
@@ -276,7 +297,23 @@ export function ChatView() {
                       : <><span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答</>}
                   </div>
                 )}
-                {m.id === streamingId
+                {/* 双源回答：外部通用科普（中性灰）在上，团队专业建议（品牌深青绿）在下。
+                    甲方脚本写的是蓝底，但 v0.2 §6.2 禁止引入新强调色，改用品牌色区分。 */}
+                {m.externalText && (
+                  <div className="src src-ext">
+                    <div className="src-t">网络参考信息</div>
+                    {m.externalText.split('\n').map((line, i) => <RichText key={i} text={line} />)}
+                  </div>
+                )}
+
+                {m.externalText ? (
+                  <div className="src src-team">
+                    <div className="src-t">银康安馨专业建议</div>
+                    {m.id === streamingId
+                      ? <StreamingBody text={m.text} onDone={() => setStreamingId(null)} />
+                      : m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
+                  </div>
+                ) : m.id === streamingId
                   ? <StreamingBody text={m.text} onDone={() => setStreamingId(null)} />
                   : m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
 
