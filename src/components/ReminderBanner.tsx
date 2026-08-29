@@ -15,8 +15,15 @@ import { IconBell, IconChevron, IconClose } from './Icons'
  * 不改变页面布局，关掉后一切归位 —— 这才是推送该有的样子。
  * 进场从右上滑入，演示时一眼能看出「又来一条」，
  * 而内容与时间都取自真实状态，没有伪造推送。
- * 关掉后本次会话不再出现（存 sessionStorage，按标签页隔离，
- * 与登录态同一套逻辑：并排两窗互不影响）。
+ * 只弹最新的那一条，关掉就结束 —— 不会接着把更早的几条依次弹出来。
+ * 做法是先取最新一条，再判断它是否已被关闭；而不是「找最新的未关闭的一条」，
+ * 后者会让关闭动作变成翻页，一条接一条弹个没完。
+ *
+ * 但之后若**真的又触发了更新的一条**（比如现场录入超标血压），
+ * 最新一条随之变化，它仍然会弹 —— 该来的提醒不能因为关过一次就被吞掉。
+ *
+ * 已关闭的 id 存 sessionStorage，按标签页隔离，与登录态同一套逻辑：
+ * 并排两窗互不影响。
  */
 const DISMISS_KEY = 'kfzl.rmbanner.dismissed'
 
@@ -30,10 +37,12 @@ export function ReminderBanner() {
     }
   })
 
-  const latest = [...items].reverse().find((r) => r.sent && r.done !== true && !dismissed.includes(r.id))
+  // 先取最新一条，再看它是否已关闭 —— 顺序反过来就成了逐条翻页
+  const newest = [...items].reverse().find((r) => r.sent && r.done !== true)
+  const latest = newest && !dismissed.includes(newest.id) ? newest : undefined
   const task = latest?.taskId ? taskDefs.find((t) => t.id === latest.taskId) : undefined
 
-  // 换到下一条时重放一次进场动画，让「又来一条」看得出来
+  // 真的又来了更新的一条时重放进场动画，让「又来一条」看得出来
   const [seq, setSeq] = useState(0)
   useEffect(() => { setSeq((n) => n + 1) }, [latest?.id])
 
