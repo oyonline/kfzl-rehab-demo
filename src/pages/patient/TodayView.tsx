@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { ReminderBanner } from '../../components/ReminderBanner'
 import { Link, useNavigate } from 'react-router-dom'
 import { SUPPORT_PHONE, patient, therapist, toISODate, videos } from '../../data/seed'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
@@ -40,9 +39,6 @@ export function TodayView() {
 
   return (
     <div className="stack">
-      {/* 最近一条提醒 —— 放在最上面，进页面第一眼就看到「系统刚催过什么」 */}
-      <ReminderBanner />
-
       <section className="hero">
         <Ring done={done} total={total} />
         <div style={{ position: 'relative', zIndex: 1 }}>

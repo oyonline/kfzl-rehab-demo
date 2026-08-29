@@ -893,40 +893,66 @@
   position: absolute; top: calc(100% + 10px); right: 0; z-index: 40;
   width: min(460px, 88vw); max-height: 70vh; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--r-lg); box-shadow: var(--sh-3);
+  border-radius: var(--r-lg);
+  /* 与推送浮层同一档投影：两者都是浮在页面之上的层，层次要一致 */
+  box-shadow: 0 2px 6px rgba(20, 32, 30, .07), 0 18px 44px -16px rgba(20, 32, 30, .3);
   animation: pop .18s cubic-bezier(.2, .8, .2, 1);
+}
+/* 指向铃铛的小角：让浮层看得出是从这个按钮展开的，而不是凭空一块 */
+.pop::before {
+  content: ''; position: absolute; top: -6px; right: 14px;
+  width: 11px; height: 11px; transform: rotate(45deg);
+  background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+  border-top-left-radius: 3px;
 }
 @keyframes pop { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
 .pop-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px 0; }
 .pop-t { font-size: var(--t-md); font-weight: 640; margin-top: 2px; }
 .pop .rmlist { padding: 0 20px 16px; }
 
-/* 顶部横幅：进场滑入一次，演示时看起来就是「刚推过来一条」 */
-.rmbanner {
-  display: flex; align-items: flex-start; gap: 13px;
-  padding: 15px 18px; border-radius: var(--r-lg);
-  background: var(--wait-bg); border: 1px solid rgba(153, 96, 26, .22);
-  animation: rmin .42s cubic-bezier(.2, .8, .2, 1);
+
+/* ---------------- 推送浮层 ----------------
+   浮在内容之上、不改变页面布局，关掉后一切归位 —— 推送该有的样子。
+   阴影比设计基线的 --sh-3 重一档：那一档是给贴在页面上的卡片用的，
+   浮层需要看得出「离开了纸面」，否则就成了另一块内容。 */
+.rmtoast {
+  position: fixed; top: 74px; right: 24px; z-index: 55;
+  width: min(392px, calc(100vw - 40px));
+  background: var(--surface); border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--wait);
+  box-shadow: 0 2px 6px rgba(20, 32, 30, .07), 0 18px 44px -16px rgba(20, 32, 30, .3);
+  padding: 15px 17px 14px;
+  animation: rmtoast-in .42s cubic-bezier(.2, .8, .2, 1);
 }
-.rmbanner[data-alert='true'] { background: var(--miss-bg); border-color: rgba(157, 51, 43, .24); }
-@keyframes rmin { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: none } }
-.rmbanner-i {
-  flex: none; width: 32px; height: 32px; border-radius: 50%;
+.rmtoast[data-alert='true'] { border-left-color: var(--miss); }
+@keyframes rmtoast-in {
+  from { opacity: 0; transform: translate3d(22px, -12px, 0) scale(.97) }
+  to   { opacity: 1; transform: none }
+}
+.rmtoast-hd { display: flex; align-items: center; gap: 8px; font-size: var(--t-xs); color: var(--wait); }
+.rmtoast[data-alert='true'] .rmtoast-hd { color: var(--miss); }
+.rmtoast-hd b { font-weight: 650; font-size: var(--t-sm); }
+.rmtoast-i {
+  width: 24px; height: 24px; border-radius: 50%; flex: none;
   display: grid; place-items: center; color: #fff; background: var(--wait);
 }
-.rmbanner[data-alert='true'] .rmbanner-i { background: var(--miss); }
-.rmbanner-b { flex: 1; min-width: 0; }
-.rmbanner-h { display: flex; align-items: center; gap: 9px; font-size: var(--t-xs); color: var(--wait); }
-.rmbanner[data-alert='true'] .rmbanner-h { color: var(--miss); }
-.rmbanner-h b { font-weight: 650; }
-.rmbanner-tag {
+.rmtoast[data-alert='true'] .rmtoast-i { background: var(--miss); }
+.rmtoast-time { color: var(--ink-3); }
+.rmtoast-tag {
   padding: 1px 7px; border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, .7); color: var(--ink-3); font-weight: 500;
+  background: var(--surface-2); color: var(--ink-3); font-weight: 500;
 }
-.rmbanner-t { display: block; margin-top: 6px; font-size: var(--t-sm); line-height: 1.65; color: var(--ink); }
-.rmbanner .btn { flex: none; align-self: center; }
-.rmbanner-x {
-  flex: none; align-self: center; padding: 8px 12px; border-radius: var(--r-pill);
+.rmtoast-x {
+  margin-left: auto; width: 24px; height: 24px; border-radius: var(--r-sm);
+  display: grid; place-items: center; color: var(--ink-4);
+}
+.rmtoast-x:hover { background: var(--surface-2); color: var(--ink-2); }
+.rmtoast-t { margin-top: 9px; font-size: var(--t-sm); line-height: 1.7; color: var(--ink); }
+.rmtoast-ft { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 13px; }
+.rmtoast-ft .btn { padding: 8px 14px; }
+.rmtoast-ok {
+  padding: 8px 12px; border-radius: var(--r-pill);
   font-size: var(--t-sm); color: var(--ink-3);
 }
-.rmbanner-x:hover { background: rgba(255, 255, 255, .6); color: var(--ink); }
+.rmtoast-ok:hover { background: var(--surface-2); color: var(--ink); }

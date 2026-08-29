@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { taskDefs } from '../data/seed'
 import { useTodayReminders } from './ReminderLog'
-import { IconBell, IconChevron } from './Icons'
+import { IconBell, IconChevron, IconClose } from './Icons'
 
 /**
- * 最近一条提醒 —— 今日页顶部的动态。
+ * 最近一条提醒 —— 浮层通知。
  *
  * 只显示「最近一条已推送、且还没做完」的提醒：做完了就不该再催，
  * 没到点的更不该提前出现。都做完时整条不渲染，页面不留空壳。
  *
- * 进场带一次滑入动画 —— 演示时它看起来就是「刚推过来一条」，
+ * 做成浮层而不是页内横幅：横幅会把下面的内容整体顶下去，读起来像页面的一部分；
+ * 而它要表达的是「系统刚推了一条消息过来」，那就应该浮在内容之上、
+ * 不改变页面布局，关掉后一切归位 —— 这才是推送该有的样子。
+ * 进场从右上滑入，演示时一眼能看出「又来一条」，
  * 而内容与时间都取自真实状态，没有伪造推送。
  * 关掉后本次会话不再出现（存 sessionStorage，按标签页隔离，
  * 与登录态同一套逻辑：并排两窗互不影响）。
@@ -44,22 +47,23 @@ export function ReminderBanner() {
   }
 
   return (
-    <div className="rmbanner" data-alert={!!latest.alert} key={seq}>
-      <span className="rmbanner-i"><IconBell size={16} /></span>
-      <span className="rmbanner-b">
-        <span className="rmbanner-h">
-          <b>{latest.alert ? '异常预警' : '康复提醒'}</b>
-          <span className="num">{latest.time}</span>
-          <span className="rmbanner-tag">刚刚推送给您</span>
-        </span>
-        <span className="rmbanner-t">{latest.text}</span>
-      </span>
-      {task?.videoId
-        ? <Link className="btn" to={`/patient/videos/${task.videoId}`}>去做这一项 <IconChevron size={13} /></Link>
-        : latest.alert
-          ? <Link className="btn" to="/patient/vitals">查看血压记录 <IconChevron size={13} /></Link>
-          : null}
-      <button className="rmbanner-x" onClick={dismiss} aria-label="知道了">知道了</button>
+    <div className="rmtoast" data-alert={!!latest.alert} key={seq} role="status">
+      <div className="rmtoast-hd">
+        <span className="rmtoast-i"><IconBell size={14} /></span>
+        <b>{latest.alert ? '异常预警' : '康复提醒'}</b>
+        <span className="num rmtoast-time">{latest.time}</span>
+        <span className="rmtoast-tag">刚刚推送</span>
+        <button className="rmtoast-x" onClick={dismiss} aria-label="关闭"><IconClose size={15} /></button>
+      </div>
+      <p className="rmtoast-t">{latest.text}</p>
+      <div className="rmtoast-ft">
+        {task?.videoId
+          ? <Link className="btn" to={`/patient/videos/${task.videoId}`} onClick={dismiss}>去做这一项 <IconChevron size={13} /></Link>
+          : latest.alert
+            ? <Link className="btn" to="/patient/vitals" onClick={dismiss}>查看血压记录 <IconChevron size={13} /></Link>
+            : <span />}
+        <button className="rmtoast-ok" onClick={dismiss}>知道了</button>
+      </div>
     </div>
   )
 }

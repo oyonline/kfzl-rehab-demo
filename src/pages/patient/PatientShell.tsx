@@ -6,6 +6,7 @@ import { CARE_ALERTS } from '../../data/guidance'
 import { useDemoState } from '../../store/store'
 import { IconAlert, IconCaret, IconFile, IconLeaf } from '../../components/Icons'
 import { ReminderBell } from '../../components/ReminderBell'
+import { ReminderBanner } from '../../components/ReminderBanner'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
 import { TodayView } from './TodayView'
 import { ChatView } from './ChatView'
@@ -149,6 +150,9 @@ export function PatientShell() {
           <Route path="guidance/:id" element={<GuidanceDetailView />} />
         </Routes>
       </main>
+
+      {/* 推送浮层挂在外壳上：它浮在所有页面之上，不属于任何一页的内容流 */}
+      <ReminderBanner />
 
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} audience="family" />
     </div>
