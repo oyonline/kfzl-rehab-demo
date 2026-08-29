@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ReminderLog } from '../../components/ReminderLog'
 import { Link, useNavigate } from 'react-router-dom'
 import { SUPPORT_PHONE, patient, therapist, toISODate, videos } from '../../data/seed'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
@@ -201,6 +202,9 @@ export function TodayView() {
           <span className="safety-tel">服务电话 {SUPPORT_PHONE}</span>
         </div>
       </section>
+
+      {/* 提醒记录放在任务时间线之后：先看今天要做什么，再看系统怎么催 */}
+      <ReminderLog />
     </div>
   )
 }

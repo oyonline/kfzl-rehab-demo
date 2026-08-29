@@ -853,3 +853,25 @@
   display: inline-block; width: 7px; height: 7px; border-radius: 50%;
   background: var(--miss); margin-left: 6px; vertical-align: 2px;
 }
+
+/* ---------------- 今日提醒记录 ----------------
+   已推送与待推送靠整行明度区分：待推送的整体压暗，
+   一眼能看出「哪些已经催过、哪些还没到点」。 */
+.rmlist { display: grid; margin-top: 16px; }
+.rmrow {
+  display: grid; grid-template-columns: 48px 12px minmax(0, 1fr); align-items: start; gap: 0 10px;
+  padding: 14px 0; border-top: 1px solid var(--line);
+}
+.rmrow:first-child { border-top: none; padding-top: 4px; }
+.rmrow[data-sent='false'] { opacity: .5; }
+.rmtime { font-size: var(--t-sm); color: var(--ink-3); line-height: 1.7; }
+.rmdot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--line-2);
+  margin-top: 8px; justify-self: center;
+}
+.rmrow[data-sent='true'] .rmdot { background: var(--teal-600); }
+.rmrow[data-alert='true'] .rmdot { background: var(--miss); }
+.rmbody { display: block; min-width: 0; }
+.rmtext { display: block; font-size: var(--t-sm); line-height: 1.7; color: var(--ink); }
+.rmrow[data-alert='true'] .rmtext { color: var(--miss); }
+.rmmeta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
