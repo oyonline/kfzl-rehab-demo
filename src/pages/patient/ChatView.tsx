@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { PRESET_QA, type PresetQA } from '../../data/qa'
+import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
 import { patient, taskDefs, therapist } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
@@ -12,6 +12,51 @@ function StreamingBody({ text, onDone }: { text: string; onDone: () => void }) {
     <>
       {lines.map((line, i) => (
         <RichText key={i} text={line + (i === lines.length - 1 && shown.length < text.length ? '▍' : '')} />
+      ))}
+    </>
+  )
+}
+
+/**
+ * 流式渲染 —— 只进不退。
+ *
+ * 不能复用 StreamingBody：它内部的 useTypewriter 依赖 [text]，
+ * 而流式输出每来一个 chunk 就换一次 text，会导致计时归零、已显示字数算回 0，
+ * 整段文字缩回去再重打 —— 一秒十几次，就是肉眼看到的闪屏。
+ *
+ * 这里把「已显示到第几个字」存在 ref 里，只随时间前进，永不回退；
+ * text 变短（换下一条消息）时才归零。
+ */
+function StreamingText({ text }: { text: string }) {
+  const [n, setN] = useState(0)
+  const nRef = useRef(0)
+  const textRef = useRef(text)
+  textRef.current = text
+
+  if (text.length < nRef.current) nRef.current = 0
+
+  useEffect(() => {
+    let timer = 0
+    const tick = () => {
+      const target = textRef.current.length
+      if (nRef.current < target) {
+        // 落后越多推进越快，避免网络突然吐一大段时字幕追不上
+        const step = Math.max(1, Math.ceil((target - nRef.current) / 8))
+        nRef.current = Math.min(target, nRef.current + step)
+        setN(nRef.current)
+      }
+      timer = window.setTimeout(tick, 30)
+    }
+    tick()
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const shown = text.slice(0, n)
+  const lines = shown.split('\n')
+  return (
+    <>
+      {lines.map((line, i) => (
+        <RichText key={i} text={line + (i === lines.length - 1 ? '▍' : '')} />
       ))}
     </>
   )
@@ -38,6 +83,9 @@ function traceFor(q: PresetQA | null): TraceStep[] {
     },
   ]
 }
+
+/** 前端等待上限。比服务端的 15s 略长，让服务端的错误先浮出来 */
+const LLM_ABORT_MS = 20000
 
 /** 构建系统提示词，注入患者档案上下文 */
 function buildSystemPrompt(): string {
@@ -92,11 +140,22 @@ export function ChatView() {
     ]
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
-      })
+      // 前端也必须自带上限：服务端 503（本机未启用 AI）是瞬时的，
+      // 但网络层卡住时只有这里能把它掐掉，否则家属端就一直转圈。
+      const ac = new AbortController()
+      const abortTimer = setTimeout(() => ac.abort(), LLM_ABORT_MS)
+
+      let response: Response
+      try {
+        response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: apiMessages }),
+          signal: ac.signal,
+        })
+      } finally {
+        clearTimeout(abortTimer)
+      }
 
       if (!response.ok) {
         throw new Error(`API 错误：${response.status}`)
@@ -131,20 +190,25 @@ export function ChatView() {
         }
       }
 
+      // 模型没吐出任何内容（超时硬停、空响应）时不落一条空气泡，按失败处理
+      if (!fullText.trim()) throw new Error('模型返回为空')
+
       // 流式输出完成后，保存完整消息
-      const id = addMessage({
+      // 不设 streamingId：这段文字已经在屏幕上逐字出完了，
+      // 正式气泡必须直接整段显示，再挂一次打字机就是第二次闪。
+      addMessage({
         role: 'ai',
         text: fullText,
-        answerSource: 'llm',
+        answerSource: 'model',
         basis: ['康复档案', '康复师确认计划'],
         escalated: false,
       })
-      setStreamingId(id)
       setStreamingText('')
     } catch (error: any) {
       console.error('LLM 调用失败:', error)
-      // 降级到预设答案或 fallback
-      const fallback = presetQ ?? { answer: ['这个问题我暂时无法回答，已为您转交康复师。'], basis: ['系统'], escalate: true, escalateHint: '已转交康复师' }
+      // 降级到预设答案；自由提问没有预设时走 FALLBACK_ANSWER（v0.1 §12：不硬答，转人工）
+      const fallback = presetQ ?? FALLBACK_ANSWER
+      setStreamingText('')
       const id = addMessage({
         role: 'ai',
         text: fallback.answer.join('\n'),
@@ -194,7 +258,7 @@ export function ChatView() {
           const isMe = m.role === 'family'
           const isTherapist = m.role === 'therapist'
           const q = PRESET_QA.find((x) => x.answer.join('\n') === m.text)
-          const hint = q?.escalateHint ?? '已转交康复师'
+          const hint = q?.escalateHint ?? FALLBACK_ANSWER.escalateHint
           return (
             <div className="bub-row" data-me={isMe} key={m.id}>
               {/* 必须一眼分清 AI 与康复师：产品主张是 AI 不取代专业人员，
@@ -252,7 +316,7 @@ export function ChatView() {
               <div className="bub-who">
                 <span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答
               </div>
-              <StreamingBody text={streamingText} onDone={() => {}} />
+              <StreamingText text={streamingText} />
             </div>
           </div>
         )}
