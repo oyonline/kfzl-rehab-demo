@@ -109,8 +109,9 @@
   font-size: 32px; font-weight: 600; letter-spacing: .04em;
   margin-bottom: 16px;
 }
-.profile-name { font-size: var(--t-xl); font-weight: 640; letter-spacing: .015em; line-height: 1.25; }
-.profile-meta { color: var(--ink-2); font-size: var(--t-sm); margin-top: 5px; }
+.profile-name { font-size: var(--t-xl); font-weight: 640; letter-spacing: .015em; line-height: 30px; }
+/* 30 + 5 + 21 = 56，与头像等高：上下沿同时对齐，不留悬空的一截 */
+.profile-meta { color: var(--ink-2); font-size: var(--t-sm); margin-top: 5px; line-height: 21px; }
 
 .facts { margin-top: 24px; display: grid; gap: 0; }
 .fact { padding: 13px 0; border-top: 1px solid var(--line); }
@@ -733,12 +734,13 @@
 
 /* ---------------- 档案卡 ---------------- */
 
-.profile-hd { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
-.profile-hd .avatar { width: 62px; height: 62px; border-radius: var(--r); font-size: 24px; margin-bottom: 0; }
-.profile-dx {
-  font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5;
-  padding: 12px 0 0; margin-top: -8px;
-}
+.profile-hd { display: flex; align-items: flex-start; gap: 15px; }
+/* 56px = 姓名行(25px × 1.25) + 间距 5px + 年龄行，头像上下沿正好压住这两行 */
+.profile-hd .avatar { width: 56px; height: 56px; border-radius: var(--r); font-size: 22px; margin-bottom: 0; flex: none; }
+/* 阶段徽标与诊断同一行：都是「她现在处于什么状况」，放一起；
+   窄栏放不下时整块换行，不会从词中间断开 */
+.profile-tags { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+.profile-dx { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5; }
 .profile-meta .sep { display: inline-block; width: 1px; height: 11px; background: var(--line-2); margin: 0 9px; vertical-align: -1px; }
 
 .fgroup {
@@ -746,6 +748,8 @@
   padding-bottom: 8px; border-bottom: 1px solid var(--line); margin: 22px 0 4px;
 }
 .fgroup:first-of-type { margin-top: 0; }
+/* 下面紧跟带边框的方块网格时不画这条线 —— 线与方块上边框贴在一起会成双线 */
+.fgroup-bare { border-bottom: none; padding-bottom: 0; margin-bottom: 10px; }
 
 .tag-warn {
   margin-left: 7px; padding: 1px 7px; border-radius: var(--r-sm);

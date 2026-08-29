@@ -83,23 +83,27 @@ export function PatientShell() {
         */}
         <aside className="card profile">
           {/* ① 身份 */}
+          {/*
+            头像与右侧两行文字上下对齐：头像 56px，恰好等于姓名行 + 年龄行的高度。
+            阶段徽标不再塞进姓名行 —— 它靠 vertical-align 魔数跟 25px 的姓名凑基线，
+            姓名一长就换行，徽标跟着飘。移到下面与诊断同一行，两者本就是同一类信息。
+            不放身高体重：甲方未提供，是合成值，不值得占这个位置。
+          */}
           <div className="profile-hd">
             <div className="avatar">{patient.name[0]}</div>
             <div>
-              <div className="profile-name">
-                {patient.name}
-                <span className="chip chip-brand" style={{ marginLeft: 10, verticalAlign: 4 }}>{patient.diagnosis.stage.replace('居家康复·', '')}</span>
-              </div>
-              {/* 不放身高体重：甲方未提供，是合成值，不值得占这个位置 */}
+              <div className="profile-name">{patient.name}</div>
               <div className="profile-meta">{patient.gender} · {patient.ageBand}</div>
             </div>
           </div>
 
-          {/* 诊断单独成行：332px 宽里跟「女 · 82 岁」挤在一起会从词中间断开 */}
-          <div className="profile-dx">{patient.diagnosis.strokeType}</div>
+          <div className="profile-tags">
+            <span className="chip chip-brand">{patient.diagnosis.stage.replace('居家康复·', '')}</span>
+            <span className="profile-dx">{patient.diagnosis.strokeType}</span>
+          </div>
 
           {/* ② 评估摘要 —— 四张量表的分值，全卡最有说服力的部分 */}
-          <div className="fgroup">评估摘要</div>
+          <div className="fgroup fgroup-bare">评估摘要</div>
           <div className="assess">
             {assessTiles.map((t) => (
               <div className="assess-i" key={t.label}>
