@@ -280,9 +280,28 @@ export interface RosterEntry {
 
 /* ---------- 持久化根结构 ---------- */
 
+/**
+ * 血压记录（甲方需求书 3.5）。
+ * 演示阶段以血压为核心指标，心率／血氧不做 —— 录入项越多，
+ * 45 秒的演示环节越容易卡在填表上。
+ */
+export interface VitalRecord {
+  id: string
+  patientId: string
+  date: ISODate
+  time: ClockTime
+  /** 收缩压（高压）mmHg */
+  systolic: number
+  /** 舒张压（低压）mmHg */
+  diastolic: number
+  by: '家属' | '康复护士'
+  at: ISODateTime
+}
+
 export interface DemoState {
   schemaVersion: number
   checkIns: CheckIn[]
+  vitals: VitalRecord[]
   uploads: VideoUpload[]
   messages: ChatMessage[]
   guidances: Guidance[]

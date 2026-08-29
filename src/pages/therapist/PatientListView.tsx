@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { PATIENT_ID, roster, toISODate } from '../../data/seed'
-import { effectiveStatus, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
+import { effectiveStatus, hasAbnormalVital, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
 import { IconAlert, IconChat, IconPlay, IconUser } from '../../components/Icons'
 
 /** 工作台首页 —— 先看在管患者，再点进具体患者 */
@@ -10,6 +10,7 @@ export function PatientListView() {
   const rows = todayCheckIns(state, today)
   const doneToday = rows.filter((r) => effectiveStatus(r.task, r.checkIn) === 'done').length
   const pending = pendingEscalations(state)
+  const bpAlert = hasAbnormalVital(state, today)
   const uploadsToday = state.uploads.filter((u) => u.date === today).length
 
   const list = roster.map((r) =>
@@ -17,7 +18,8 @@ export function PatientListView() {
       ? {
           ...r,
           todayDone: doneToday,
-          flag: pending.length > 0 ? `${pending.length} 条咨询待回复` : r.flag,
+          // 血压异常优先于咨询待回复 —— 前者是身体出状况，后者是沟通事项
+          flag: bpAlert ? '血压超出安全范围' : pending.length > 0 ? `${pending.length} 条咨询待回复` : r.flag,
           hasUpload: uploadsToday > 0,
           open: true,
         }

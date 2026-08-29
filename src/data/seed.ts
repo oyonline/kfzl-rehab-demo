@@ -13,7 +13,7 @@
  * - 标注 SYNTHETIC 的字段是甲方未提供、为叙事完整而虚构的，勿当作甲方数据引用。
  */
 
-import type { Patient, TaskDef, VideoAsset, Therapist, CheckIn, ISODate, RosterEntry } from './types'
+import type { Patient, TaskDef, VideoAsset, Therapist, CheckIn, ISODate, RosterEntry, VitalRecord } from './types'
 
 export const PATIENT_ID = 'p-001'
 
@@ -399,4 +399,55 @@ export function buildHistory(today: Date, fromISO: ISODate = HOMECARE_START): Ch
     cursor.setDate(cursor.getDate() + 1)
   }
   return out
+}
+
+/* ---------- 血压：安全范围与演示基线 ---------- */
+
+/**
+ * 安全范围 —— 甲方需求书 3.5 原文：「收缩压 90-139，舒张压 60-89」。
+ * 判定阈值属专业口径，写死在这里并注明出处，不由本项目自行拟定。
+ */
+export const BP_SAFE = { sysMin: 90, sysMax: 139, diaMin: 60, diaMax: 89 } as const
+
+export function isBpAbnormal(v: { systolic: number; diastolic: number }): boolean {
+  return (
+    v.systolic < BP_SAFE.sysMin || v.systolic > BP_SAFE.sysMax ||
+    v.diastolic < BP_SAFE.diaMin || v.diastolic > BP_SAFE.diaMax
+  )
+}
+
+/**
+ * 演示基线数据 —— 甲方演示脚本环节六：「这里记录血压，我们上门测的数据已经在了」。
+ * 按每日任务模板的 07:00 与 20:30 各测一次，铺最近三天，加上今天早晨一条。
+ * 全部在安全范围内：超标那一条留给现场当场录入，才有「录入 → 预警」的过程。
+ * 09:00 那条是康复护士小彭训练前测的 112/70，与评估表一致。
+ */
+export function buildVitals(today: Date): VitalRecord[] {
+  const out: VitalRecord[] = []
+  const plan: Array<[number, string, number, number, VitalRecord['by']]> = [
+    [3, '07:10', 126, 78, '家属'],
+    [3, '20:35', 132, 80, '家属'],
+    [2, '07:05', 122, 76, '家属'],
+    [2, '20:40', 128, 82, '家属'],
+    [1, '07:15', 124, 79, '家属'],
+    [1, '20:30', 130, 84, '家属'],
+    [0, '07:05', 118, 74, '家属'],
+    [0, '09:00', 112, 70, '康复护士'],
+  ]
+  for (const [daysAgo, time, systolic, diastolic, by] of plan) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - daysAgo)
+    const date = toISODate(d)
+    out.push({
+      id: `vital-${date}-${time.replace(':', '')}`,
+      patientId: PATIENT_ID,
+      date,
+      time,
+      systolic,
+      diastolic,
+      by,
+      at: `${date}T${time}:00`,
+    })
+  }
+  return out.sort((a, b) => a.at.localeCompare(b.at))
 }

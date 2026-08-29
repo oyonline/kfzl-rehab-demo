@@ -10,6 +10,7 @@ import { TodayView } from './TodayView'
 import { ChatView } from './ChatView'
 import { CheckinCalendar } from '../../components/CheckinCalendar'
 import { GuidanceView } from './GuidanceView'
+import { VitalsView } from './VitalsView'
 import { GuidanceDetailView } from './GuidanceDetailView'
 import { VideoLibraryView } from './VideoLibraryView'
 import { VideoDetailView } from './VideoDetailView'
@@ -20,6 +21,7 @@ const NAV = [
   { to: '/patient/chat', label: '康复咨询' },
   { to: '/patient/calendar', label: '打卡日历' },
   { to: '/patient/guidance', label: '饮食与健康' },
+  { to: '/patient/vitals', label: '健康数据' },
 ]
 
 export function PatientShell() {
@@ -139,6 +141,7 @@ export function PatientShell() {
           <Route path="videos/:id" element={<VideoDetailView />} />
           <Route path="chat" element={<ChatView />} />
           <Route path="calendar" element={<CheckinCalendar />} />
+          <Route path="vitals" element={<VitalsView />} />
           <Route path="guidance" element={<GuidanceView />} />
           <Route path="guidance/:id" element={<GuidanceDetailView />} />
         </Routes>

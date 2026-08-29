@@ -9,16 +9,20 @@
  */
 
 import { useSyncExternalStore } from 'react'
-import type { CheckIn, CheckInStatus, ChatMessage, DemoState, Escalation, Guidance, TaskDef, VideoUpload } from '../data/types'
-import { PATIENT_ID, buildHistory, taskDefs, toISODate } from '../data/seed'
+import type { CheckIn, CheckInStatus, ChatMessage, DemoState, Escalation, Guidance, TaskDef, VideoUpload, VitalRecord } from '../data/types'
+import { PATIENT_ID, buildHistory, buildVitals, isBpAbnormal, taskDefs, toISODate } from '../data/seed'
 
 const KEY = 'kfzl.demo.v1'
-const SCHEMA_VERSION = 5  // 2026-08-27 每日任务由 4 项增至 6 项，历史需按新任务集重建
+// 任务集或状态结构一变就要升版本，否则旧 localStorage 里会留着已不存在的
+// 任务打卡记录，康复师端算出的完成数对不上。
+// v6：2026-08-29 换病例后任务改为 7 项，并新增血压记录。
+const SCHEMA_VERSION = 6
 
 function initialState(): DemoState {
   return {
     schemaVersion: SCHEMA_VERSION,
     checkIns: buildHistory(new Date()),
+    vitals: buildVitals(new Date()),
     uploads: [],
     messages: [],
     guidances: [],
@@ -66,10 +70,27 @@ function write(next: DemoState) {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === KEY) {
-      cache = null
-      emit()
+    if (e.key !== KEY) return
+
+    // 只接受同版本的写入。
+    //
+    // 两端若跑在不同构建上（比如一个窗口在重新构建前就打开了），版本号会不一致。
+    // 此时若照旧丢弃缓存去重读，本端会发现版本不符 → 用自己的初始状态覆盖 localStorage
+    // → 又触发对端做同样的事，两个标签页来回把对方的数据冲掉，
+    // 表现是「刚录入的记录转眼就没了」，而且不报任何错。实测踩到过。
+    //
+    // 忽略异版本的写入：各自守着自己的状态，不会互相清空。
+    if (e.newValue) {
+      try {
+        const incoming = JSON.parse(e.newValue) as Partial<DemoState>
+        if (incoming?.schemaVersion !== SCHEMA_VERSION) return
+      } catch {
+        return
+      }
     }
+
+    cache = null
+    emit()
   })
 }
 
@@ -221,6 +242,39 @@ export function answerEscalation(id: string, answer: string, therapistName: stri
 }
 
 /** 排练用：一键回到演示初始状态 */
+/**
+ * 记录一次血压。写进同一份 localStorage，康复师端靠 storage 事件自动看到 ——
+ * 与打卡走的是同一条联动链路，不另起机制。
+ */
+export function addVital(systolic: number, diastolic: number, by: VitalRecord['by'] = '家属') {
+  const now = new Date()
+  const date = toISODate(now)
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  const rec: VitalRecord = {
+    id: nextId('vital', now),
+    patientId: PATIENT_ID,
+    date,
+    time,
+    systolic,
+    diastolic,
+    by,
+    at: now.toISOString(),
+  }
+  const s = read()
+  write({ ...s, vitals: [...s.vitals, rec] })
+  return rec
+}
+
+/** 今日血压，按时间正序 */
+export function todayVitals(state: DemoState, date = toISODate(new Date())) {
+  return state.vitals.filter((v) => v.date === date).sort((a, b) => a.at.localeCompare(b.at))
+}
+
+/** 今日是否出现过超出安全范围的血压 —— 康复师端名单据此标「需要关注」 */
+export function hasAbnormalVital(state: DemoState, date = toISODate(new Date())) {
+  return todayVitals(state, date).some(isBpAbnormal)
+}
+
 export function resetDemo() {
   write(initialState())
 }

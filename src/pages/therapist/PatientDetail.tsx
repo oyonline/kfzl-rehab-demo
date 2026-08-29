@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
 import { PATIENT_ID, patient, toISODate } from '../../data/seed'
-import { effectiveStatus, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
+import { effectiveStatus, hasAbnormalVital, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
 import { IconFile } from '../../components/Icons'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
 import { CheckinCalendar } from '../../components/CheckinCalendar'
 import { FollowupView } from './FollowupView'
 import { ConsultView } from './ConsultView'
 import { GuidanceLogView } from './GuidanceLogView'
+import { VitalsPanel } from './VitalsPanel'
 
 /** 患者详情 —— 从列表进入，内部再按页签切换 */
 export function PatientDetail() {
@@ -17,10 +18,13 @@ export function PatientDetail() {
   const rows = todayCheckIns(state, toISODate(new Date()))
   const done = rows.filter((r) => effectiveStatus(r.task, r.checkIn) === 'done').length
   const pending = pendingEscalations(state).length
+  // 今日出现过超标血压时，页签上打一个红点 —— 康复师不必点进去才知道
+  const bpAlert = hasAbnormalVital(state)
 
   const TABS = [
     { to: `/therapist/patients/${PATIENT_ID}`, label: '随访概览', end: true },
     { to: `/therapist/patients/${PATIENT_ID}/consult`, label: '咨询记录', badge: pending },
+    { to: `/therapist/patients/${PATIENT_ID}/vitals`, label: '健康数据', alert: bpAlert },
     { to: `/therapist/patients/${PATIENT_ID}/adherence`, label: '依从性' },
     { to: `/therapist/patients/${PATIENT_ID}/guidance`, label: '指导记录' },
   ]
@@ -53,6 +57,7 @@ export function PatientDetail() {
           <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => (isActive ? 'active' : '')}>
             {t.label}
             {!!t.badge && <span className="nav-badge num">{t.badge}</span>}
+            {t.alert && <span className="nav-dot" aria-label="有异常" />}
           </NavLink>
         ))}
       </nav>
@@ -60,6 +65,7 @@ export function PatientDetail() {
       <Routes>
         <Route index element={<FollowupView />} />
         <Route path="consult" element={<ConsultView />} />
+        <Route path="vitals" element={<VitalsPanel />} />
         <Route path="adherence" element={<CheckinCalendar />} />
         <Route path="guidance" element={<GuidanceLogView />} />
       </Routes>
