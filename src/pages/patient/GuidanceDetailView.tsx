@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { InlineRich } from '../../components/RichText'
 import { GUIDANCE } from '../../data/guidance'
 import { therapist, videos } from '../../data/seed'
-import { GUIDANCE_ICON } from './GuidanceView'
+import { guidanceIcon } from './GuidanceView'
 import { IconAlert, IconChevron, IconPlay } from '../../components/Icons'
 
 export function GuidanceDetailView() {
@@ -23,7 +23,7 @@ export function GuidanceDetailView() {
 
       <section className="card card-pad">
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
-          <span className="grow-ico" style={{ width: 52, height: 52 }}>{GUIDANCE_ICON[g.id]}</span>
+          <span className="grow-ico" style={{ width: 52, height: 52 }}>{guidanceIcon(g.id)}</span>
           <span>
             <h1 className="card-title" style={{ fontSize: 'var(--t-xl)' }}>{g.title}</h1>
             <p className="card-note" style={{ marginTop: 3 }}>{g.summary}</p>
@@ -69,7 +69,7 @@ export function GuidanceDetailView() {
         <div className="glist">
           {others.map((o) => (
             <Link className="grow" to={`/patient/guidance/${o.id}`} key={o.id}>
-              <span className="grow-ico">{GUIDANCE_ICON[o.id]}</span>
+              <span className="grow-ico">{guidanceIcon(o.id)}</span>
               <span style={{ flex: 1 }}>
                 <span className="grow-t">{o.title}</span>
                 <span className="grow-s">{o.summary}</span>

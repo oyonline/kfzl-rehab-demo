@@ -71,6 +71,14 @@ export const IconBell = ({ size = 18 }: P) => (
 export const IconShield = ({ size = 16 }: P) => (
   <svg {...base(size)}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z" /><path d="m9 12 2 2 4-4" /></svg>
 )
+/** 水滴 —— 食物质地与液体增稠 */
+export const IconDroplet = ({ size = 18 }: P) => (
+  <svg {...base(size)}><path d="M12 21.5a6.5 6.5 0 0 0 6.5-6.5c0-4.6-6.5-12.5-6.5-12.5S5.5 10.4 5.5 15a6.5 6.5 0 0 0 6.5 6.5Z" /></svg>
+)
+/** 禁止 —— 禁忌食物 */
+export const IconBan = ({ size = 18 }: P) => (
+  <svg {...base(size)}><circle cx="12" cy="12" r="9" /><path d="m5.64 5.64 12.72 12.72" /></svg>
+)
 export const IconCaret = ({ size = 14 }: P) => (
   <svg {...base(size)}><path d="m6 9 6 6 6-6" /></svg>
 )

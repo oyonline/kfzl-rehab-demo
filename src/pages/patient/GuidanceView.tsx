@@ -1,13 +1,25 @@
 import { Link } from 'react-router-dom'
 import { GUIDANCE } from '../../data/guidance'
 import { patient } from '../../data/seed'
-import { IconAlert, IconApple, IconChevron, IconHeart, IconHome, IconUtensils } from '../../components/Icons'
+import { IconActivity, IconAlert, IconApple, IconBan, IconChevron, IconDroplet, IconHeart, IconHome, IconLeaf, IconUtensils } from '../../components/Icons'
 
-export const GUIDANCE_ICON: Record<string, React.ReactNode> = {
+const GUIDANCE_ICONS: Record<string, React.ReactNode> = {
   feeding: <IconUtensils size={19} />,
-  diet: <IconApple size={19} />,
+  texture: <IconDroplet size={19} />,
+  menu: <IconApple size={19} />,
+  'bp-diet': <IconActivity size={19} />,
+  taboo: <IconBan size={19} />,
   monitor: <IconHeart size={19} />,
   safety: <IconHome size={19} />,
+}
+
+/**
+ * 取图标 —— 带兜底。
+ * 原先是直接查表，2026-08-29 换成甲方饮食内容后新增了四张卡，
+ * 表里没有对应 id，页面上就是四个空框。以后再加卡也不会再空。
+ */
+export function guidanceIcon(id: string): React.ReactNode {
+  return GUIDANCE_ICONS[id] ?? <IconLeaf size={19} />
 }
 
 export function GuidanceView() {
@@ -24,7 +36,7 @@ export function GuidanceView() {
       <div className="glist">
         {GUIDANCE.map((g) => (
           <Link className="grow" to={`/patient/guidance/${g.id}`} key={g.id}>
-            <span className="grow-ico">{GUIDANCE_ICON[g.id]}</span>
+            <span className="grow-ico">{guidanceIcon(g.id)}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span className="grow-t">{g.title}</span>
               <span className="grow-s">{g.summary}</span>
