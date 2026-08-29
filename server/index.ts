@@ -58,7 +58,10 @@ app.post('/api/chat', async (req, res) => {
   }
 })
 
-// 静态文件服务（前端构建产物）- 只处理 GET 请求
+// 静态文件服务（前端构建产物）
+app.use(express.static(join(PROJECT_ROOT, 'dist')))
+
+// SPA fallback：前端路由
 app.get('/', (req, res) => {
   res.sendFile(join(PROJECT_ROOT, 'dist', 'index.html'))
 })
