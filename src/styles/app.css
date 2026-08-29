@@ -875,3 +875,58 @@
 .rmtext { display: block; font-size: var(--t-sm); line-height: 1.7; color: var(--ink); }
 .rmrow[data-alert='true'] .rmtext { color: var(--miss); }
 .rmmeta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ---------------- 提醒：铃铛面板与顶部横幅 ---------------- */
+.bellwrap { position: relative; }
+.bell[data-open='true'] { background: var(--surface-2); color: var(--ink); }
+/* 角标改成数字：家属真正关心的是「还剩几件没做」，一个红点说明不了 */
+.bell-n {
+  position: absolute; top: 2px; right: 0;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: var(--wait); color: #fff;
+  font-size: 10px; font-weight: 650; line-height: 16px; text-align: center;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.bell[data-unread='true']::after { content: none; }
+
+.pop {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 40;
+  width: min(460px, 88vw); max-height: 70vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--sh-3);
+  animation: pop .18s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes pop { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+.pop-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px 0; }
+.pop-t { font-size: var(--t-md); font-weight: 640; margin-top: 2px; }
+.pop .rmlist { padding: 0 20px 16px; }
+
+/* 顶部横幅：进场滑入一次，演示时看起来就是「刚推过来一条」 */
+.rmbanner {
+  display: flex; align-items: flex-start; gap: 13px;
+  padding: 15px 18px; border-radius: var(--r-lg);
+  background: var(--wait-bg); border: 1px solid rgba(153, 96, 26, .22);
+  animation: rmin .42s cubic-bezier(.2, .8, .2, 1);
+}
+.rmbanner[data-alert='true'] { background: var(--miss-bg); border-color: rgba(157, 51, 43, .24); }
+@keyframes rmin { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: none } }
+.rmbanner-i {
+  flex: none; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; color: #fff; background: var(--wait);
+}
+.rmbanner[data-alert='true'] .rmbanner-i { background: var(--miss); }
+.rmbanner-b { flex: 1; min-width: 0; }
+.rmbanner-h { display: flex; align-items: center; gap: 9px; font-size: var(--t-xs); color: var(--wait); }
+.rmbanner[data-alert='true'] .rmbanner-h { color: var(--miss); }
+.rmbanner-h b { font-weight: 650; }
+.rmbanner-tag {
+  padding: 1px 7px; border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .7); color: var(--ink-3); font-weight: 500;
+}
+.rmbanner-t { display: block; margin-top: 6px; font-size: var(--t-sm); line-height: 1.65; color: var(--ink); }
+.rmbanner .btn { flex: none; align-self: center; }
+.rmbanner-x {
+  flex: none; align-self: center; padding: 8px 12px; border-radius: var(--r-pill);
+  font-size: var(--t-sm); color: var(--ink-3);
+}
+.rmbanner-x:hover { background: rgba(255, 255, 255, .6); color: var(--ink); }

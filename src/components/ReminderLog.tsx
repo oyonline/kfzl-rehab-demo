@@ -3,75 +3,87 @@ import { isBpAbnormal, taskDefs, toISODate } from '../data/seed'
 import { effectiveStatus, useDemoState } from '../store/store'
 import { IconBell, IconCheck } from './Icons'
 
+export interface ReminderItem {
+  id: string
+  time: string
+  text: string
+  /** 已过推送时间 */
+  sent: boolean
+  /** 对应任务是否已完成；无关联任务时为 undefined */
+  done?: boolean
+  /** 异常预警（触发式），整行标红 */
+  alert?: boolean
+  taskId?: string
+}
+
+const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
+
 /**
- * 今日提醒记录。
+ * 今日提醒 —— 顶栏铃铛面板与今日页横幅共用。
  *
  * 甲方需求书 3.3：计划设定了时间，到点自动推送消息提醒家属。
- * 但 v0.2 撤销了演示时钟，「到点自动弹提醒」在几分钟的演示里没有呈现路径 ——
- * 真等到 20:30 才弹一条，现场根本看不到。
- *
- * 所以改为把提醒机制**以记录的形式**呈现：已过时间的显示为已推送，
- * 未到时间的显示为待推送，两者都按真实时间判断，不伪造。
- * 讲解时可以直接指着说「到点会推这一条」，而不必等到点。
- *
- * 血压超标那条是触发式的，只有今日确实出现过超标记录时才出现 ——
- * 它是真的被触发出来的，不是预先摆好的。
+ * v0.2 撤销了演示时钟，几分钟的演示里等不到「到点」，因此按真实时间
+ * 判断已推送／待推送，把机制以记录形式呈现，不伪造推送时间。
  */
-export function ReminderLog() {
+export function useTodayReminders(): ReminderItem[] {
   const state = useDemoState()
   const now = new Date()
   const today = toISODate(now)
   const nowMin = now.getHours() * 60 + now.getMinutes()
-  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 
-  const items = DAILY_REMINDERS.map((r) => {
+  const items: ReminderItem[] = DAILY_REMINDERS.map((r) => {
     const task = r.taskId ? taskDefs.find((t) => t.id === r.taskId) : undefined
     const checkIn = task ? state.checkIns.find((c) => c.taskId === task.id && c.date === today) : undefined
     return {
-      ...r,
+      id: r.id,
+      time: r.time,
+      text: r.text,
+      taskId: r.taskId,
       sent: toMin(r.time) <= nowMin,
       done: task ? effectiveStatus(task, checkIn) === 'done' : undefined,
     }
   })
 
-  // 触发式：今日出现过超标血压才加进来，按实际发生时间插入
-  const badVital = state.vitals
+  // 触发式：今日确实录到超标血压才出现，按实际发生时间插入
+  const bad = state.vitals
     .filter((v) => v.date === today && isBpAbnormal(v))
     .sort((a, b) => b.at.localeCompare(a.at))[0]
+  if (bad) {
+    items.push({
+      id: 'rm-bp-alert',
+      time: bad.time,
+      text: abnormalBpReminder(bad.systolic, bad.diastolic),
+      sent: true,
+      alert: true,
+    })
+  }
 
-  const all = [
-    ...items,
-    ...(badVital
-      ? [{
-          id: 'rm-bp-alert',
-          time: badVital.time,
-          text: abnormalBpReminder(badVital.systolic, badVital.diastolic),
-          sent: true,
-          done: undefined as boolean | undefined,
-          highlight: true,
-          alert: true,
-        }]
-      : []),
-  ].sort((a, b) => toMin(a.time) - toMin(b.time))
+  return items.sort((a, b) => toMin(a.time) - toMin(b.time))
+}
 
-  const sentCount = all.filter((r) => r.sent).length
+/** 已推送、且（有关联任务时）尚未完成的条数 —— 铃铛角标用 */
+export function pendingCount(items: ReminderItem[]) {
+  return items.filter((r) => r.sent && r.done !== true).length
+}
 
+export function ReminderLog({ items }: { items: ReminderItem[] }) {
+  const sentCount = items.filter((r) => r.sent).length
   return (
-    <section className="card card-pad">
-      <div className="card-hd">
+    <>
+      <div className="pop-hd">
         <div>
           <div className="eyebrow">主动提醒</div>
-          <h2 className="card-title" style={{ fontSize: 'var(--t-md)' }}>今日提醒记录</h2>
+          <div className="pop-t">今日提醒记录</div>
         </div>
-        <span className="card-note num">已推送 {sentCount} / {all.length}</span>
+        <span className="card-note num">已推送 {sentCount} / {items.length}</span>
       </div>
-      <p className="card-note" style={{ marginTop: 4 }}>
-        按康复师计划的时间点自动推送给 {'陈女士'}，不用自己记
+      <p className="card-note" style={{ padding: '0 20px 4px' }}>
+        按康复师计划的时间点自动推送，不用自己记
       </p>
 
       <div className="rmlist">
-        {all.map((r) => (
-          <div className="rmrow" key={r.id} data-sent={r.sent} data-alert={'alert' in r && r.alert}>
+        {items.map((r) => (
+          <div className="rmrow" key={r.id} data-sent={r.sent} data-alert={!!r.alert}>
             <span className="rmtime num">{r.time}</span>
             <span className="rmdot" />
             <span className="rmbody">
@@ -87,6 +99,6 @@ export function ReminderLog() {
           </div>
         ))}
       </div>
-    </section>
+    </>
   )
 }

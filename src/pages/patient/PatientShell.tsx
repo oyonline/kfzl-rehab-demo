@@ -4,7 +4,8 @@ import { currentSession, signOut } from '../../auth/auth'
 import { patient } from '../../data/seed'
 import { CARE_ALERTS } from '../../data/guidance'
 import { useDemoState } from '../../store/store'
-import { IconAlert, IconBell, IconCaret, IconFile, IconLeaf } from '../../components/Icons'
+import { IconAlert, IconCaret, IconFile, IconLeaf } from '../../components/Icons'
+import { ReminderBell } from '../../components/ReminderBell'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
 import { TodayView } from './TodayView'
 import { ChatView } from './ChatView'
@@ -58,10 +59,8 @@ export function PatientShell() {
           </nav>
         </div>
         <div className="topbar-right">
-          {/* 康复师留言此前只在今日页顶部，切到别页就看不见了 */}
-          <span className="bell" data-unread={unread > 0} title={unread > 0 ? `${unread} 条康复师留言未读` : '暂无新留言'}>
-            <IconBell size={17} />
-          </span>
+          {/* 消息中心：今日提醒记录 + 未读留言数。任何页面都点得到 */}
+          <ReminderBell unreadGuidance={unread} />
           <span className="who">
             <span className="who-dot">{session?.displayName?.[0] ?? '·'}</span>
             {session?.displayName}
