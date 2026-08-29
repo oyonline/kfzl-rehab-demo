@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .preview
+
+# 视频素材：约 390MB，不进仓库，随压缩包另发（见 docs/现场部署.md）
+public/videos/

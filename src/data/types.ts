@@ -157,9 +157,15 @@ export interface VideoAsset {
   /** 素材未到位时为 undefined，配合 origin='placeholder' 渲染占位卡 */
   src?: string
   poster?: string
-  target: string
-  goal: string
-  cautions: string[]
+  /**
+   * 适用对象 / 训练目的 / 注意事项 —— 可选。
+   * 甲方需求书要求「每个视频配一句话文字说明」，但交付时一句都没给。
+   * 与其替他们编造康复指导，不如留空：UI 会整块不渲染，不出现占位字样。
+   * 只有能追溯到甲方训练计划表的几条才填。
+   */
+  target?: string
+  goal?: string
+  cautions?: string[]
   durationSec?: number
   origin: DataOrigin
 }

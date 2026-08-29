@@ -31,7 +31,7 @@ export function VideoDetailView() {
         <span>{video.title}</span>
       </div>
 
-      <VideoStage video={video} onWantSteps={() => stepsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      <VideoStage video={video} onWantSteps={steps.length ? () => stepsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : undefined} />
 
       <section className="card card-pad">
         <div className="card-hd">
@@ -43,39 +43,43 @@ export function VideoDetailView() {
         </div>
 
         <dl className="kv">
-          <dt>训练目标</dt><dd>{video.goal}</dd>
-          <dt>适用对象</dt><dd>{video.target}</dd>
+          {video.goal && <><dt>训练目标</dt><dd>{video.goal}</dd></>}
+          {video.target && <><dt>适用对象</dt><dd>{video.target}</dd></>}
           {task && <><dt>本次要求</dt><dd>{task.instruction}</dd></>}
         </dl>
 
+        {/* 注意事项只在甲方计划表里有据可查时才显示，不替其编造 */}
         <div className="alert" style={{ background: 'var(--wait-bg)', color: 'var(--wait)' }}>
           <span style={{ flex: 'none', marginTop: 2 }}><IconAlert size={15} /></span>
           <span>
-            {video.cautions.join('；')}。有任何不适立即停止，并告诉 {therapist.name} 康复师。
+            {video.cautions?.length ? `${video.cautions.join('；')}。` : ''}
+            有任何不适立即停止，并告诉 {therapist.name} 康复师。
           </span>
         </div>
       </section>
 
-      <section className="card card-pad" ref={stepsRef}>
-        <div className="card-hd">
-          <div>
-            <div className="eyebrow">分步说明</div>
-            <h2 className="card-title">{patient.caregiver.name}照着做就可以</h2>
+      {steps.length > 0 && (
+        <section className="card card-pad" ref={stepsRef}>
+          <div className="card-hd">
+            <div>
+              <div className="eyebrow">分步说明</div>
+              <h2 className="card-title">{patient.caregiver.name}照着做就可以</h2>
+            </div>
+            <span className="card-note num">共 {steps.length} 步</span>
           </div>
-          <span className="card-note num">共 {steps.length} 步</span>
-        </div>
-        <ol className="steps">
-          {steps.map((s, i) => (
-            <li key={s.title}>
-              <span className="steps-n num">{i + 1}</span>
-              <span>
-                <div className="steps-t">{s.title}</div>
-                <div className="steps-d">{s.detail}</div>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+          <ol className="steps">
+            {steps.map((s, i) => (
+              <li key={s.title}>
+                <span className="steps-n num">{i + 1}</span>
+                <span>
+                  <div className="steps-t">{s.title}</div>
+                  <div className="steps-d">{s.detail}</div>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {task && (
         <section className="card card-pad">

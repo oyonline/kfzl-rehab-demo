@@ -285,41 +285,67 @@ export const roster: RosterEntry[] = [
 ]
 
 /**
- * 视频素材：正式文件死线 9/1（v0.2 §8）。
- * 到位后把 src 填上并把 origin 改为 'team_reviewed'。
+ * 训练视频 —— 甲方 2026-08-28 交付的真实拍摄素材，共 17 个（去重后）。
+ *
+ * 文件不进仓库（约 390MB，见 .gitignore），随压缩包另发，解压到 public/videos/。
+ * 文件名统一为视频 id，避免中文与「！」进 URL 产生编码问题。
+ * 文件缺失时播放区自动回退到分步图文，不黑屏 —— 这是「视频另发」方案的兜底。
+ *
+ * 时长为 ffprobe 实测。target/goal/cautions 只在能追溯到甲方训练计划表时才填，
+ * 其余留空：甲方要求「每个视频配一句话说明」但未交付，本项目不替其编造康复指导。
  */
 export const videos: VideoAsset[] = [
   {
-    id: 'v-transfer',
-    title: '翻身与床上转移',
-    category: '日常照护',
-    target: '偏瘫恢复期居家老人',
-    goal: '减少照护者腰部负担，降低跌倒与压疮风险',
-    cautions: ['动作前先说明，让老人有准备', '避免牵拉患侧上肢'],
-    durationSec: 165,
-    origin: 'placeholder',
-  },
-  {
     id: 'v-swallow',
-    title: '吞咽训练（空吞咽与冰刺激）',
-    category: '吞咽功能',
-    target: '进食呛咳的恢复期老人',
-    goal: '改善吞咽启动，降低误吸风险',
-    cautions: ['进食后 30 分钟内不做', '出现明显呛咳立即停止并联系康复师'],
-    durationSec: 132,
-    origin: 'placeholder',
+    title: '吞咽康复操',
+    category: '吞咽康复类',
+    src: '/videos/v-swallow.mp4',
+    target: '洼田饮水试验 Ⅱ 级、舌肌与喉部肌力不足者',
+    goal: '激活口颜面与咽喉肌群，改善吞咽启动',
+    cautions: ['每天早晚各一次，每次约 5 分钟', '感冒或精神状态差时暂停', '出现明显呛咳立即停止并联系康复师'],
+    durationSec: 210,
+    origin: 'team_reviewed',
   },
   {
     id: 'v-balance',
-    title: '坐位平衡与下肢主动训练',
-    category: '肢体功能',
-    target: '可维持短时坐位的偏瘫老人',
-    goal: '延长坐位耐受时间，为站立转移做准备',
-    cautions: ['全程需 1 人在旁保护', '出现头晕立即停止'],
-    durationSec: 198,
-    origin: 'placeholder',
+    title: '下肢康复训练（准备期）',
+    category: '肢体康复类',
+    src: '/videos/v-balance.mp4',
+    target: '左下肢肌力 4 级、踝周肌张力增高的偏瘫老人',
+    goal: '放松左下肢、降低肌张力、维持踝关节活动度',
+    cautions: ['力度以有酸胀感为宜，不产生疼痛', '全程须有人在旁保护', '头晕或明显疲劳立即停止'],
+    durationSec: 135,
+    origin: 'team_reviewed',
   },
+  {
+    id: 'v-transfer',
+    title: '转移训练',
+    category: '肢体康复类',
+    src: '/videos/v-transfer.mp4',
+    target: '偏瘫恢复期居家老人',
+    goal: '减少照护者腰部负担，降低跌倒与压疮风险',
+    cautions: ['动作前先说明，让老人有准备', '避免牵拉患侧上肢'],
+    durationSec: 62,
+    origin: 'team_reviewed',
+  },
+  { id: 'v-feed-water',   title: '喂水技巧',       category: '吞咽康复类',   src: '/videos/v-feed-water.mp4',   durationSec: 61,  origin: 'team_reviewed' },
+  { id: 'v-feed-food',    title: '喂食技巧',       category: '吞咽康复类',   src: '/videos/v-feed-food.mp4',    durationSec: 54,  origin: 'team_reviewed' },
+  { id: 'v-joint',        title: '关节活动',       category: '肢体康复类',   src: '/videos/v-joint.mp4',        durationSec: 69,  origin: 'team_reviewed' },
+  { id: 'v-dress',        title: '穿脱衣物',       category: '肢体康复类',   src: '/videos/v-dress.mp4',        durationSec: 109, origin: 'team_reviewed' },
+  { id: 'v-posture',      title: '良肢位摆放',     category: '日常护理类',   src: '/videos/v-posture.mp4',      durationSec: 82,  origin: 'team_reviewed' },
+  { id: 'v-bp',           title: '血压监测',       category: '日常护理类',   src: '/videos/v-bp.mp4',           durationSec: 172, origin: 'team_reviewed' },
+  { id: 'v-walker',       title: '助行器行走',     category: '康复辅具类',   src: '/videos/v-walker.mp4',       durationSec: 171, origin: 'team_reviewed' },
+  { id: 'v-bandage',      title: '康复辅具绷带使用', category: '康复辅具类', src: '/videos/v-bandage.mp4',      durationSec: 82,  origin: 'team_reviewed' },
+  { id: 'v-vr',           title: 'VR 训练',        category: '认知训练类',   src: '/videos/v-vr.mp4',           durationSec: 161, origin: 'team_reviewed' },
+  { id: 'v-attention',    title: '注意力训练',     category: '认知训练类',   src: '/videos/v-attention.mp4',    durationSec: 73,  origin: 'team_reviewed' },
+  { id: 'v-memory',       title: '短时记忆训练',   category: '认知训练类',   src: '/videos/v-memory.mp4',       durationSec: 93,  origin: 'team_reviewed' },
+  { id: 'v-head-massage', title: '头部按摩',       category: '中医适宜技术', src: '/videos/v-head-massage.mp4', durationSec: 307, origin: 'team_reviewed' },
+  { id: 'v-acupoint',     title: '穴位按摩',       category: '中医适宜技术', src: '/videos/v-acupoint.mp4',     durationSec: 88,  origin: 'team_reviewed' },
+  { id: 'v-drum',         title: '空灵鼓教学',     category: '中医适宜技术', src: '/videos/v-drum.mp4',         durationSec: 60,  origin: 'team_reviewed' },
 ]
+
+/** 视频库分组顺序 —— 与甲方交付的文件夹结构一致 */
+export const VIDEO_CATEGORIES = ['吞咽康复类', '肢体康复类', '认知训练类', '日常护理类', '中医适宜技术', '康复辅具类'] as const
 
 
 

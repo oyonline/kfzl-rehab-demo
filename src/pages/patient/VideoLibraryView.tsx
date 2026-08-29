@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom'
-import { taskDefs, videos } from '../../data/seed'
+import { VIDEO_CATEGORIES, taskDefs, videos } from '../../data/seed'
 import { VIDEO_STEPS } from '../../data/videoSteps'
 import { IconPlay } from '../../components/Icons'
 
+/**
+ * 训练视频库。
+ *
+ * 17 个视频全部是甲方拍摄的真实素材，因此不做「制作中」占位卡 ——
+ * 列表里出现的每一个都点得开、播得了。
+ *
+ * 按甲方交付的文件夹分六类展示；某一类没有视频时整块不渲染，
+ * 不留空标题。
+ */
 export function VideoLibraryView() {
   return (
     <div className="stack">
@@ -16,32 +25,46 @@ export function VideoLibraryView() {
         <div className="eyebrow">训练视频</div>
         <h2 className="card-title">康复师为她安排的训练</h2>
         <p className="card-note" style={{ marginTop: 6 }}>
-          每一项都对应今日安排里的一个时间点，照着做即可
+          带时间标记的对应今日安排，其余可按需观看
         </p>
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-        {videos.map((v) => {
-          const task = taskDefs.find((t) => t.videoId === v.id)
-          const steps = VIDEO_STEPS[v.id]?.length ?? 0
-          return (
-            <Link className="vcard" to={`/patient/videos/${v.id}`} key={v.id}>
-              <div className="vcard-thumb">
-                <span className="stage-play" style={{ width: 44, height: 44 }}><IconPlay size={16} /></span>
-              </div>
-              <div className="vcard-body">
-                <div className="vcard-t">{v.title}</div>
-                <div className="vcard-d">{v.goal}</div>
-                <div className="vcard-m">
-                  {task && <span className="chip">{task.scheduledTime} 安排</span>}
-                  <span className="chip">{steps} 个步骤</span>
-                  {v.durationSec && <span className="chip num">约 {Math.round(v.durationSec / 60)} 分钟</span>}
-                </div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      {VIDEO_CATEGORIES.map((cat) => {
+        const group = videos.filter((v) => v.category === cat)
+        if (!group.length) return null
+        return (
+          <section className="stack" key={cat}>
+            <div className="eyebrow" style={{ marginBottom: -6 }}>{cat}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+              {group.map((v) => {
+                const task = taskDefs.find((t) => t.videoId === v.id)
+                const steps = VIDEO_STEPS[v.id]?.length ?? 0
+                return (
+                  <Link className="vcard" to={`/patient/videos/${v.id}`} key={v.id}>
+                    <div className="vcard-thumb">
+                      <span className="stage-play" style={{ width: 44, height: 44 }}><IconPlay size={16} /></span>
+                    </div>
+                    <div className="vcard-body">
+                      <div className="vcard-t">{v.title}</div>
+                      {/* 甲方未给每个视频的一句话说明，没有就整行不渲染，不填废话 */}
+                      {v.goal && <div className="vcard-d">{v.goal}</div>}
+                      <div className="vcard-m">
+                        {task && <span className="chip chip-brand">{task.scheduledTime} 安排</span>}
+                        {steps > 0 && <span className="chip">{steps} 个步骤</span>}
+                        {v.durationSec && (
+                          <span className="chip num">
+                            {v.durationSec < 60 ? `约 ${v.durationSec} 秒` : `约 ${Math.round(v.durationSec / 60)} 分钟`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }
