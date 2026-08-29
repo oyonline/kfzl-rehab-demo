@@ -88,18 +88,45 @@ function traceFor(q: PresetQA | null): TraceStep[] {
 const LLM_ABORT_MS = 20000
 
 /** 构建系统提示词，注入患者档案上下文 */
+/** 双源回答的分段标记 —— 提示词里要求模型原样输出，前端据此切成两块 */
+export const SRC_EXTERNAL = '【网络参考信息】'
+export const SRC_TEAM = '【银康安馨专业建议】'
+
 function buildSystemPrompt(): string {
-  return `你是居家康复智能助手，正在为${patient.name}的家属提供康复咨询。
+  const assess = patient.assessments.map((a) => `${a.name} ${a.value}${a.level ? `（${a.level}）` : ''}`).join('；')
+  const plan = taskDefs.map((t) => `${t.scheduledTime} ${t.title}`).join('、')
+
+  return `你是居家康复智能助手，正在为${patient.name}的家属${patient.caregiver.name}提供康复咨询。
 
 患者档案：
-- 姓名：${patient.name}
-- 年龄：${patient.ageBand}
-- 诊断：${patient.diagnosis.strokeType}
+- 姓名：${patient.name}，${patient.gender}，${patient.ageBand}
+- 诊断：${patient.diagnosis.strokeType}；合并${patient.diagnosis.comorbidities.join('、')}
 - 阶段：${patient.diagnosis.stage}
 - 患侧：${patient.functionStatus.affectedSide}
-- 用药：${patient.medications.map(m => m.name).join('、') || '暂无'}
+- 评估（${PLAN_CONFIRMED_ON} 前由康复团队实测）：${assess}
+- 风险：${patient.functionStatus.risks.join('；')}
+- 用药：${patient.medications.map((m) => m.name).join('、') || '暂无'}（剂量未确认，不得提及具体剂量）
+
+今日计划（${PLAN_CONFIRMED_ON} 由康复师确认）：${plan}
 
 康复师：${therapist.name}（${therapist.title}）
+
+【输出格式】必须分成两段，标题原样写，不要加编号或其它符号：
+
+${SRC_EXTERNAL}
+通用健康科普层面的说法，不针对这位老人。写完在末尾附一句
+「（信息来源于公开健康科普资料，仅供参考）」。
+
+${SRC_TEAM}
+结合上面档案里的具体情况给出的建议，要点到她的评估数据或今日计划。
+末尾另起一行写「—— 银康安馨康复团队」。
+
+【如实原则 · 最重要】
+- 你没有联网检索能力，第一段只能写你确知的通用科普，**不要暗示是刚刚搜到的**。
+- 若某一段确实没有可靠内容可写，就在该标题下**如实写明没有**，例如
+  「这个问题超出我能提供的科普范围，建议直接咨询${therapist.name}康复师。」
+  **绝对不要为了填满格式而编造内容。**
+- 档案里没有的信息（如具体用药剂量、未做过的检查结果）一律不得杜撰。
 
 安全边界（必须遵守）：
 1. 不给出具体药物剂量、不改变食物性状比例、不调整训练强度——均属专业判断
@@ -112,6 +139,21 @@ function buildSystemPrompt(): string {
 - 分点说明，条理清晰
 - 先安抚情绪，再给建议
 - 必要时用**加粗**强调关键信息`
+}
+
+/**
+ * 把模型返回的整段切成双源两块。
+ *
+ * 模型不总是守格式 —— 没出现标记时整段当作专业建议那一块返回，
+ * 不硬拆，也不丢内容。流式过程中同样可用：外部块先成形，团队块随后。
+ */
+export function splitDualSource(text: string): { external?: string; team: string } {
+  const iE = text.indexOf(SRC_EXTERNAL)
+  const iT = text.indexOf(SRC_TEAM)
+  if (iE < 0 && iT < 0) return { team: text }
+  if (iT < 0) return { external: text.slice(iE + SRC_EXTERNAL.length).trim(), team: '' }
+  const external = iE >= 0 ? text.slice(iE + SRC_EXTERNAL.length, iT).trim() : undefined
+  return { external, team: text.slice(iT + SRC_TEAM.length).trim() }
 }
 
 export function ChatView() {
@@ -196,11 +238,16 @@ export function ChatView() {
       // 流式输出完成后，保存完整消息
       // 不设 streamingId：这段文字已经在屏幕上逐字出完了，
       // 正式气泡必须直接整段显示，再挂一次打字机就是第二次闪。
+      // 切成两块存：这样双源渲染对预设答案和模型答案是同一套，不用分叉
+      const { external, team } = splitDualSource(fullText)
       addMessage({
         role: 'ai',
-        text: fullText,
+        text: team || fullText,
+        externalText: external,
         answerSource: 'model',
-        basis: ['康复档案', '康复师确认计划'],
+        // 如实：这两样确实注入了提示词，模型是据此作答的。
+        // 原先写死的两条里「康复师确认计划」当时并未注入，属于说了没做的事。
+        basis: [`${patient.name}的康复档案`, `${PLAN_CONFIRMED_ON} 康复师确认计划`],
         escalated: false,
       })
       setStreamingText('')
@@ -353,7 +400,26 @@ export function ChatView() {
               <div className="bub-who">
                 <span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答
               </div>
-              <StreamingText text={streamingText} />
+              {/* 流式过程中就按两块渲染：外部块一旦成形就固定住，
+                  团队块继续逐字出。等全部出完再切成两块会闪一下。 */}
+              {(() => {
+                const { external, team } = splitDualSource(streamingText)
+                if (external === undefined) return <StreamingText text={team} />
+                return (
+                  <>
+                    <div className="src src-ext">
+                      <div className="src-t">网络参考信息</div>
+                      {external.split('\n').map((line, i) => <RichText key={i} text={line} />)}
+                    </div>
+                    {team && (
+                      <div className="src src-team">
+                        <div className="src-t">银康安馨专业建议</div>
+                        <StreamingText text={team} />
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           </div>
         )}
