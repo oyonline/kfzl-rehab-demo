@@ -60,8 +60,13 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
         </header>
 
         <div className="drawer-body">
-          {/* 1 基本信息 + 功能情况（并排） */}
-          <div className="sec-row">
+          {/*
+            两块都整宽，与抽屉里其余各块（风险与心理、入院记录、诊疗经过、
+            评估记录）一致。原先只有这两块并排，是整张抽屉里唯一的例外 ——
+            破坏节奏的正是这个例外本身：两栏内容一短一长，行高各不相同，
+            第二行之后再没有一行能横向对齐，底边也差一大截。
+            改整宽后，长描述拿到近两倍宽度，行数减半，右侧不再参差。
+          */}
           <section className="sec">
             <div className="sec-t">基本信息</div>
             <dl className="kv">
@@ -90,7 +95,6 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               <dt>认知沟通</dt><dd>{patient.functionStatus.cognition}</dd>
             </dl>
           </section>
-          </div>
 
           {/* 风险与心理支持 */}
           <section className="sec">
