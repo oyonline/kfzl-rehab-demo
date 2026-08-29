@@ -3,6 +3,7 @@ import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
 import { PLAN_CONFIRMED_ON, patient, taskDefs, therapist } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
+import { InlineRich } from '../../components/RichText'
 import { ThinkingTrace, useTypewriter, type TraceStep } from '../../components/ThinkingTrace'
 
 function StreamingBody({ text, onDone }: { text: string; onDone: () => void }) {
@@ -62,10 +63,9 @@ function StreamingText({ text }: { text: string }) {
   )
 }
 
-/** **加粗** 的极简渲染，避免为一处强调引入 markdown 依赖 */
+/** 气泡里按行成段；行内加粗交给共用组件 */
 function RichText({ text }: { text: string }) {
-  const parts = text.split(/\*\*(.+?)\*\*/g)
-  return <p>{parts.map((s, i) => (i % 2 ? <strong key={i}>{s}</strong> : s))}</p>
+  return <p><InlineRich text={text} /></p>
 }
 
 /**

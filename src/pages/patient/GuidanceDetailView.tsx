@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { InlineRich } from '../../components/RichText'
 import { GUIDANCE } from '../../data/guidance'
 import { therapist, videos } from '../../data/seed'
 import { GUIDANCE_ICON } from './GuidanceView'
@@ -33,7 +34,7 @@ export function GuidanceDetailView() {
           {g.items.map((it, i) => (
             <li key={it}>
               <span className="steps-n num">{i + 1}</span>
-              <span className="steps-d" style={{ color: 'var(--ink)', paddingTop: 2 }}>{it}</span>
+              <span className="steps-d" style={{ color: 'var(--ink)', paddingTop: 2 }}><InlineRich text={it} /></span>
             </li>
           ))}
         </ol>
