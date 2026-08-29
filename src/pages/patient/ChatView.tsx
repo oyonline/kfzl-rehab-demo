@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
+import { PRESET_QA, type PresetQA } from '../../data/qa'
 import { patient, taskDefs, therapist } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
@@ -39,37 +39,137 @@ function traceFor(q: PresetQA | null): TraceStep[] {
   ]
 }
 
+/** 构建系统提示词，注入患者档案上下文 */
+function buildSystemPrompt(): string {
+  return `你是居家康复智能助手，正在为${patient.name}的家属提供康复咨询。
+
+患者档案：
+- 姓名：${patient.name}
+- 年龄：${patient.ageBand}
+- 诊断：${patient.diagnosis.strokeType}
+- 阶段：${patient.diagnosis.stage}
+- 患侧：${patient.functionStatus.affectedSide}
+- 用药：${patient.medications.map(m => m.name).join('、') || '暂无'}
+
+康复师：${therapist.name}（${therapist.title}）
+
+安全边界（必须遵守）：
+1. 不给出具体药物剂量、不改变食物性状比例、不调整训练强度——均属专业判断
+2. 一律引导"记录 + 观察 + 联系康复师"，而非替代专业决策
+3. 每条都带明确的升级条件（出现什么情况必须立即联系/就医）
+4. 涉及康复计划调整、新出现的身体变化，或需要专业评估的情况，明确建议转康复师
+
+回答风格：
+- 用家属能听懂的话，避免医学术语
+- 分点说明，条理清晰
+- 先安抚情绪，再给建议
+- 必要时用**加粗**强调关键信息`
+}
+
 export function ChatView() {
   const state = useDemoState()
   const [draft, setDraft] = useState('')
   const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null } | null>(null)
   const [streamingId, setStreamingId] = useState<string | null>(null)
+  const [streamingText, setStreamingText] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
   const messages = state.messages
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages.length, trace, streamingId])
+
+  /** 调用 LLM API，流式接收回答 */
+  async function callLLM(userQuestion: string, presetQ: PresetQA | null) {
+    // 构建消息历史（最近 10 轮）
+    const recentMessages = messages.slice(-10).map(m => ({
+      role: m.role === 'family' ? 'user' : 'assistant',
+      content: m.text,
+    }))
+
+    const apiMessages = [
+      { role: 'system', content: buildSystemPrompt() },
+      ...recentMessages,
+      { role: 'user', content: userQuestion },
+    ]
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API 错误：${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('无法读取响应流')
+
+      const decoder = new TextDecoder()
+      let fullText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n').filter(line => line.startsWith('data: '))
+
+        for (const line of lines) {
+          const data = line.slice(6)
+          if (data === '[DONE]') continue
+
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.content) {
+              fullText += parsed.content
+              setStreamingText(fullText)
+            }
+          } catch {
+            // 忽略解析错误
+          }
+        }
+      }
+
+      // 流式输出完成后，保存完整消息
+      const id = addMessage({
+        role: 'ai',
+        text: fullText,
+        answerSource: 'llm',
+        basis: ['康复档案', '康复师确认计划'],
+        escalated: false,
+      })
+      setStreamingId(id)
+      setStreamingText('')
+    } catch (error: any) {
+      console.error('LLM 调用失败:', error)
+      // 降级到预设答案或 fallback
+      const fallback = presetQ ?? { answer: ['这个问题我暂时无法回答，已为您转交康复师。'], basis: ['系统'], escalate: true, escalateHint: '已转交康复师' }
+      const id = addMessage({
+        role: 'ai',
+        text: fallback.answer.join('\n'),
+        answerSource: 'preset_fallback',
+        basis: fallback.basis,
+        escalated: fallback.escalate,
+      })
+      setStreamingId(id)
+    }
+  }
 
   function reply(q: PresetQA | null, asked: string) {
     addMessage({ role: 'family', text: asked })
     setTrace({ steps: traceFor(q), qa: q })
   }
 
-  /** 依据过程走完后才产生回答，并逐字输出 */
+  /** 依据过程走完后调用 LLM */
   const onTraceDone = useCallback(() => {
     if (!trace) return
-    const a = trace.qa ?? FALLBACK_ANSWER
-    const id = addMessage({
-      role: 'ai',
-      text: a.answer.join('\n'),
-      answerSource: 'preset_fallback',
-      basis: a.basis,
-      escalated: a.escalate,
-    })
-    setStreamingId(id)
+    const asked = messages[messages.length - 1]?.text ?? ''
+    callLLM(asked, trace.qa)
     setTrace(null)
-  }, [trace])
+  }, [trace, messages])
 
-  const busy = trace !== null || streamingId !== null
+  const busy = trace !== null || streamingId !== null || streamingText !== ''
   const unasked = busy ? [] : PRESET_QA.filter((q) => !messages.some((m) => m.role === 'family' && m.text === q.question))
 
   return (
@@ -94,7 +194,7 @@ export function ChatView() {
           const isMe = m.role === 'family'
           const isTherapist = m.role === 'therapist'
           const q = PRESET_QA.find((x) => x.answer.join('\n') === m.text)
-          const hint = q?.escalateHint ?? FALLBACK_ANSWER.escalateHint
+          const hint = q?.escalateHint ?? '已转交康复师'
           return (
             <div className="bub-row" data-me={isMe} key={m.id}>
               {/* 必须一眼分清 AI 与康复师：产品主张是 AI 不取代专业人员，
@@ -145,6 +245,17 @@ export function ChatView() {
             </div>
           )
         })}
+        {streamingText && (
+          <div className="bub-row" data-me={false}>
+            <span className="bub-av"><IconChat size={17} /></span>
+            <div className="bub bub-ai">
+              <div className="bub-who">
+                <span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答
+              </div>
+              <StreamingBody text={streamingText} onDone={() => {}} />
+            </div>
+          </div>
+        )}
         {trace && <ThinkingTrace steps={trace.steps} onDone={onTraceDone} />}
         <div ref={endRef} />
       </div>
