@@ -1,11 +1,13 @@
 import { Link, useParams } from 'react-router-dom'
 import { InlineRich } from '../../components/RichText'
-import { GUIDANCE } from '../../data/guidance'
-import { therapist, videos } from '../../data/seed'
+import { usePatientData, useContent } from '../../data/context'
 import { guidanceIcon } from './GuidanceView'
 import { IconAlert, IconChevron, IconPlay } from '../../components/Icons'
 
 export function GuidanceDetailView() {
+  const { guidance: GUIDANCE } = useContent()
+  const { therapist } = usePatientData()
+  const { videos } = useContent()
   const { id } = useParams()
   const g = GUIDANCE.find((x) => x.id === id)
   if (!g) return <section className="card card-pad">没有找到这条指导</section>

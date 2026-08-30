@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
-import { PLAN_CONFIRMED_ON, patient, taskDefs, therapist } from '../../data/seed'
+import { FALLBACK_ANSWER, type PresetQA } from '../../data/qa'
+import type { Patient, TaskDef, Therapist } from '../../data/types'
+import { useContent, usePatientData } from '../../data/context'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { authFetch } from '../../auth/auth'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
@@ -81,12 +82,12 @@ export interface KbHit {
 }
 
 /** 检索知识库。失败不抛，返回空数组 —— 检索挂了也不能让问答挂掉 */
-async function kbSearch(q: string): Promise<{ hits: KbHit[]; disclaimers: string[] }> {
+async function kbSearch(q: string, patientId: string): Promise<{ hits: KbHit[]; disclaimers: string[] }> {
   try {
     const res = await authFetch('/api/kb/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q, topK: 4, patientId: patient.id }),
+      body: JSON.stringify({ q, topK: 4, patientId }),
     })
     if (!res.ok) return { hits: [], disclaimers: [] }
     const d = await res.json()
@@ -106,10 +107,22 @@ async function kbSearch(q: string): Promise<{ hits: KbHit[]; disclaimers: string
  * 写了就是宣称系统有它没有的能力。现在语料已入库、检索真的在跑，
  * 所以如实写上，且只在真有命中时才出现，条数与文档名都取自实际返回。
  */
-function traceFor(q: PresetQA | null, hits: KbHit[] = []): TraceStep[] {
+/**
+ * P4 起患者数据由 PatientProvider 提供，模块级函数不能再直接读单例，
+ * 需要什么就传什么 —— 这样多患者下不会串档。
+ */
+interface PromptCtx {
+  patient: Patient
+  taskDefs: TaskDef[]
+  therapist: Therapist
+  planConfirmedOn: string
+}
+
+function traceFor(ctx: PromptCtx, q: PresetQA | null, hits: KbHit[] = []): TraceStep[] {
+  const { patient, taskDefs, planConfirmedOn } = ctx
   const steps: TraceStep[] = [
     { label: '读取康复档案', detail: `${patient.name} · ${patient.diagnosis.strokeType} · ${patient.diagnosis.stage}` },
-    { label: '结合康复师确认的计划', detail: `${PLAN_CONFIRMED_ON} 制定，含今日 ${taskDefs.length} 项安排` },
+    { label: '结合康复师确认的计划', detail: `${planConfirmedOn} 制定，含今日 ${taskDefs.length} 项安排` },
   ]
   if (hits.length > 0) {
     steps.push({
@@ -136,7 +149,8 @@ const LLM_ABORT_MS = 20000
 export const SRC_EXTERNAL = '【网络参考信息】'
 export const SRC_TEAM = '【银康安馨专业建议】'
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(ctx: PromptCtx): string {
+  const { patient, taskDefs, therapist, planConfirmedOn } = ctx
   const assess = patient.assessments.map((a) => `${a.name} ${a.value}${a.level ? `（${a.level}）` : ''}`).join('；')
   const plan = taskDefs.map((t) => `${t.scheduledTime} ${t.title}`).join('、')
 
@@ -147,11 +161,11 @@ function buildSystemPrompt(): string {
 - 诊断：${patient.diagnosis.strokeType}；合并${patient.diagnosis.comorbidities.join('、')}
 - 阶段：${patient.diagnosis.stage}
 - 患侧：${patient.functionStatus.affectedSide}
-- 评估（${PLAN_CONFIRMED_ON} 前由康复团队实测）：${assess}
+- 评估（${planConfirmedOn} 前由康复团队实测）：${assess}
 - 风险：${patient.functionStatus.risks.join('；')}
 - 用药：${patient.medications.map((m) => m.name).join('、') || '暂无'}（剂量未确认，不得提及具体剂量）
 
-今日计划（${PLAN_CONFIRMED_ON} 由康复师确认）：${plan}
+今日计划（${planConfirmedOn} 由康复师确认）：${plan}
 
 康复师：${therapist.name}（${therapist.title}）
 
@@ -201,6 +215,9 @@ export function splitDualSource(text: string): { external?: string; team: string
 }
 
 export function ChatView() {
+  const { planConfirmedOn, patient, taskDefs, therapist } = usePatientData()
+  const { presetQA: PRESET_QA } = useContent()
+  const promptCtx: PromptCtx = { patient, taskDefs, therapist, planConfirmedOn }
   const state = useDemoState()
   const [draft, setDraft] = useState('')
   const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null; hits: KbHit[]; disclaimers: string[] } | null>(null)
@@ -220,7 +237,7 @@ export function ChatView() {
     }))
 
     const apiMessages = [
-      { role: 'system', content: buildSystemPrompt() },
+      { role: 'system', content: buildSystemPrompt(promptCtx) },
       ...recentMessages,
       { role: 'user', content: userQuestion },
     ]
@@ -293,7 +310,7 @@ export function ChatView() {
         // 这里直接用真实文档名与出处，不再是写死的两条。
         basis: [
           `${patient.name}的康复档案`,
-          `${PLAN_CONFIRMED_ON} 康复师确认计划`,
+          `${planConfirmedOn} 康复师确认计划`,
           ...hitsToBasis(hits),
         ],
         escalated: false,
@@ -324,8 +341,8 @@ export function ChatView() {
     addMessage({ role: 'family', text: asked })
     // 预设问题走甲方原文，不检索；自由提问才检索，且先拿到命中再放依据动画，
     // 这样动画里报的条数与文档名是真的，不是占位。
-    const { hits, disclaimers } = q ? { hits: [] as KbHit[], disclaimers: [] as string[] } : await kbSearch(asked)
-    setTrace({ steps: traceFor(q, hits), qa: q, hits, disclaimers })
+    const { hits, disclaimers } = q ? { hits: [] as KbHit[], disclaimers: [] as string[] } : await kbSearch(asked, patient.id)
+    setTrace({ steps: traceFor(promptCtx, q, hits), qa: q, hits, disclaimers })
   }
 
   /**

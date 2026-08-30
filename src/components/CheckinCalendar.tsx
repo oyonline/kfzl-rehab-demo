@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { HOMECARE_START, taskDefs, toISODate } from '../data/seed'
+import {toISODate} from '../data/seed'
+import { usePatientData } from '../data/context'
 import { effectiveStatus, useDemoState } from '../store/store'
 import { IconCheck, IconChevron } from './Icons'
 
@@ -10,6 +11,7 @@ type State = 'out' | 'future' | 'full' | 'partial' | 'none' | 'norecord'
 
 /** 打卡日历 —— 两端共用，保证家属与康复师看到的是同一套判定 */
 export function CheckinCalendar() {
+  const { homecareStart: HOMECARE_START, taskDefs } = usePatientData()
   const state = useDemoState()
   const today = new Date()
   const todayKey = toISODate(today)

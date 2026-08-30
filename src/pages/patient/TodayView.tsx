@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { SUPPORT_PHONE, patient, therapist, toISODate, videos } from '../../data/seed'
+import {SUPPORT_PHONE, toISODate} from '../../data/seed'
+import { usePatientData, useContent } from '../../data/context'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
 import { IconActivity, IconAlert, IconCheck, IconClock, IconHeart, IconPill, IconPlay, IconShield } from '../../components/Icons'
 import { Lines } from '../../components/Lines'
 
 export function TodayView() {
+  const { patient, taskDefs, therapist } = usePatientData()
+  const { videos } = useContent()
   const nav = useNavigate()
   const state = useDemoState()
   const today = toISODate(new Date())
-  const rows = todayCheckIns(state, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
+  const rows = todayCheckIns(state, taskDefs, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
   const [troubleFor, setTroubleFor] = useState<string | null>(null)
   const [note, setNote] = useState('')
   const [showAllMsgs, setShowAllMsgs] = useState(false)

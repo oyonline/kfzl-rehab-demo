@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BP_SAFE, isBpAbnormal, patient, therapist } from '../../data/seed'
+import {BP_SAFE, isBpAbnormal} from '../../data/seed'
+import { usePatientData } from '../../data/context'
 import { addVital, useDemoState } from '../../store/store'
 import { BpChart } from '../../components/BpChart'
 import { IconAlert, IconCheck, IconHeart } from '../../components/Icons'
@@ -16,6 +17,7 @@ import { IconAlert, IconCheck, IconHeart } from '../../components/Icons'
  * 不判断高血压分级，更不建议加药。
  */
 export function VitalsView() {
+  const { patient, therapist } = usePatientData()
   const state = useDemoState()
   const [sys, setSys] = useState('')
   const [dia, setDia] = useState('')

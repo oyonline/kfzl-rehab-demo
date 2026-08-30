@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
-import { GUIDANCE } from '../../data/guidance'
-import { patient } from '../../data/seed'
+import { useContent, usePatientData } from '../../data/context'
 import { IconActivity, IconAlert, IconApple, IconBan, IconChevron, IconDroplet, IconHeart, IconHome, IconLeaf, IconUtensils } from '../../components/Icons'
 
 const GUIDANCE_ICONS: Record<string, React.ReactNode> = {
@@ -23,6 +22,8 @@ export function guidanceIcon(id: string): React.ReactNode {
 }
 
 export function GuidanceView() {
+  const { guidance: GUIDANCE } = useContent()
+  const { patient } = usePatientData()
   return (
     <div className="stack">
       <section className="card card-pad">

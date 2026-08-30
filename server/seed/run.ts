@@ -16,7 +16,7 @@ import {
   PLAN_CONFIRMED_ON, HOMECARE_START, buildHistory, buildVitals,
 } from '../../src/data/seed.ts'
 import { VIDEO_STEPS } from '../../src/data/videoSteps.ts'
-import { GUIDANCE } from '../../src/data/guidance.ts'
+import { CARE_ALERTS, GUIDANCE } from '../../src/data/guidance.ts'
 import { PRESET_QA } from '../../src/data/qa.ts'
 import { DAILY_REMINDERS } from '../../src/data/reminders.ts'
 
@@ -36,6 +36,10 @@ const TABLES = [
 ]
 
 const seed = db.transaction(() => {
+  // 知识库语料不由种子管理（归 pnpm kb:import），但 kb_documents.reviewed_by
+  // 指向 users，直接删 users 会撞外键。先摘掉审核人引用 ——
+  // 重灌用户等于审核归属已不可考，保留 review_status 但清掉「谁审的」。
+  db.prepare('UPDATE kb_documents SET reviewed_by = NULL, reviewed_at = NULL WHERE reviewed_by IS NOT NULL').run()
   for (const t of TABLES) db.prepare(`DELETE FROM ${t}`).run()
 
   /* ---------- 用户 ---------- */
@@ -74,9 +78,10 @@ const seed = db.transaction(() => {
     .run(p.id, p.diagnosis.strokeType, p.diagnosis.onsetDate, p.diagnosis.stage, J(p.diagnosis.comorbidities))
 
   db.prepare(`INSERT INTO patient_function
-    (patient_id,affected_side,mobility,swallowing,cognition,risks) VALUES (?,?,?,?,?,?)`)
+    (patient_id,affected_side,mobility,swallowing,cognition,risks,care_alerts) VALUES (?,?,?,?,?,?,?)`)
     .run(p.id, p.functionStatus.affectedSide, p.functionStatus.mobility,
-         p.functionStatus.swallowing, p.functionStatus.cognition, J(p.functionStatus.risks))
+         p.functionStatus.swallowing, p.functionStatus.cognition,
+         J(p.functionStatus.risks), J(CARE_ALERTS))
 
   db.prepare(`INSERT INTO patient_goals (patient_id,short_term,next_review_date) VALUES (?,?,?)`)
     .run(p.id, J(p.goals.shortTerm), p.goals.nextReviewDate)
@@ -167,12 +172,15 @@ const seed = db.transaction(() => {
   }
 
   /* ---------- 知识库集合 ---------- */
-  db.prepare(`INSERT INTO kb_collections (id,name,description,disclaimer,enabled,sort_order)
+  // OR IGNORE：集合的 enabled 与 disclaimer 是运维可调的状态
+  // （政策集合的开关就是用户裁决过的），重灌演示数据不该把它们冲回默认值。
+  // 不存在时建，存在就原样保留。
+  db.prepare(`INSERT OR IGNORE INTO kb_collections (id,name,description,disclaimer,enabled,sort_order)
     VALUES (?,?,?,?,?,?)`).run(
     'kb-m1', '智能问答知识库',
     '甲方模块一：脑卒中基础知识、照护技能、家属常问、术语解释、应急指导',
     null, 1, 0)
-  db.prepare(`INSERT INTO kb_collections (id,name,description,disclaimer,enabled,sort_order)
+  db.prepare(`INSERT OR IGNORE INTO kb_collections (id,name,description,disclaimer,enabled,sort_order)
     VALUES (?,?,?,?,?,?)`).run(
     'kb-m7', '政策咨询与福利',
     '甲方模块七：养老康复补贴、消费券惠民、医保报销、长护险',

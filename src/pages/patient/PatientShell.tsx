@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
-import { currentSession, signOut } from '../../auth/auth'
-import { patient } from '../../data/seed'
-import { CARE_ALERTS } from '../../data/guidance'
+import { authFetch, currentSession, signOut } from '../../auth/auth'
+import { ContentProvider, PatientProvider, usePatientData } from '../../data/context'
+
 import { useDemoLoaded, useDemoState } from '../../store/store'
 import { IconAlert, IconCaret, IconFile, IconLeaf } from '../../components/Icons'
 import { ReminderBell } from '../../components/ReminderBell'
@@ -26,7 +26,60 @@ const NAV = [
   { to: '/patient/vitals', label: '健康数据' },
 ]
 
+/**
+ * 家属端外壳。
+ *
+ * 拆成两层是必须的：本组件既要**提供**患者上下文，又要**消费**它
+ * （顶栏显示姓名、档案抽屉）。同一个组件不能同时做这两件事 ——
+ * useContext 读不到自己这一层的 Provider。
+ *
+ * 家属绑定哪位患者由服务端决定（patient_members），不由前端猜。
+ * 绑定多位时取第一位；真要支持切换是后续的事，这里先不臆造 UI。
+ */
 export function PatientShell() {
+  const [patientId, setPatientId] = useState<string | null>(null)
+  const [noPatient, setNoPatient] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    void (async () => {
+      try {
+        const res = await authFetch('/api/auth/me')
+        if (!res.ok) return
+        const d = await res.json()
+        if (!alive) return
+        if (d.patientIds?.length) setPatientId(d.patientIds[0])
+        else setNoPatient(true)
+      } catch { /* 会话失效由 authFetch 处理 */ }
+    })()
+    return () => { alive = false }
+  }, [])
+
+  if (noPatient) {
+    return (
+      <div className="app" data-skin="warm" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+        <div className="card card-pad" style={{ maxWidth: 420 }}>
+          <h2 className="card-title">尚未关联老人档案</h2>
+          <p className="card-note" style={{ marginTop: 8 }}>
+            请联系康复师为您的账号关联老人档案后再登录。
+          </p>
+        </div>
+      </div>
+    )
+  }
+  if (!patientId) return <div className="app" style={{ minHeight: '100vh' }} />
+
+  return (
+    <ContentProvider>
+      <PatientProvider patientId={patientId}>
+        <PatientShellInner />
+      </PatientProvider>
+    </ContentProvider>
+  )
+}
+
+function PatientShellInner() {
+  const { patient, careAlerts } = usePatientData()
   const nav = useNavigate()
   const session = currentSession()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -142,7 +195,7 @@ export function PatientShell() {
           <div className="risk">
             <div className="risk-t"><IconAlert size={15} /> 今日须注意</div>
             <ul>
-              {CARE_ALERTS.map((a) => <li key={a}>{a}</li>)}
+              {careAlerts.map((a) => <li key={a}>{a}</li>)}
             </ul>
           </div>
         </aside>

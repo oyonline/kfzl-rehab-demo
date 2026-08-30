@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HOMECARE_START, patient, therapist } from '../data/seed'
+import { usePatientData } from '../data/context'
 import type { CareEventKind } from '../data/types'
 import { IconClose } from './Icons'
 
@@ -23,6 +23,7 @@ const KIND_LABEL: Record<CareEventKind, string> = {
  * 导致填实后的分值在完整档案里根本看不到。
  */
 export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onClose: () => void; audience: 'family' | 'therapist' }) {
+  const { homecareStart: HOMECARE_START, patient, therapist } = usePatientData()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

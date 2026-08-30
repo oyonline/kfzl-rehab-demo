@@ -10,10 +10,11 @@
 
 import { Router } from 'express'
 import { getDb } from '../db/index.ts'
-import { requireAuth, requirePatientAccess, visiblePatientIds } from '../auth/middleware.ts'
+import { requireAuth, requireRole, requirePatientAccess, visiblePatientIds } from '../auth/middleware.ts'
 import { publish, addClient } from '../events/bus.ts'
-import { toCheckIn, toVital, toUpload, toMessage, toGuidance, toEscalation } from './mappers.ts'
-import { buildHistory, buildVitals, toISODate } from '../../src/data/seed.ts'
+import { toCheckIn, toVital, toUpload, toMessage, toGuidance, toEscalation,
+         toPatient, toTaskDef, toReminder } from './mappers.ts'
+import { buildHistory, buildVitals, isBpAbnormal, toISODate } from '../../src/data/seed.ts'
 
 export const patientsRouter = Router()
 
@@ -38,24 +39,90 @@ patientsRouter.get('/', requireAuth, (req, res) => {
 
   const today = toISODate(new Date())
   const ph = ids.map(() => '?').join(',')
+  // 工作台要的逐患者标记一次算齐：拆成前端逐个请求，7 位患者就是 7 轮往返。
   const rows = db.prepare(`
-    SELECT p.id, p.name, p.gender, p.age_band, d.stage,
+    SELECT p.id, p.name, p.gender, p.age_band, d.stage, m.access,
       (SELECT count(*) FROM task_defs t
         WHERE t.patient_id = p.id AND t.active_to IS NULL)                      AS today_total,
       (SELECT count(*) FROM check_ins c
-        WHERE c.patient_id = p.id AND c.date = ? AND c.status = 'done')         AS today_done
+        WHERE c.patient_id = p.id AND c.date = ? AND c.status = 'done')         AS today_done,
+      (SELECT count(*) FROM escalations e
+        WHERE e.patient_id = p.id AND e.status = 'pending')                     AS pending_count,
+      (SELECT count(*) FROM uploads u
+        WHERE u.patient_id = p.id AND u.date = ?)                               AS uploads_today
     FROM patients p
     LEFT JOIN patient_diagnosis d ON d.patient_id = p.id
+    LEFT JOIN patient_members m   ON m.patient_id = p.id AND m.user_id = ?
     WHERE p.id IN (${ph}) AND p.status = 'active'
     ORDER BY p.created_at
-  `).all(today, ...ids) as any[]
+  `).all(today, today, req.user!.sub, ...ids) as any[]
+
+  // 血压超标要按安全范围逐条判，SQL 里写不干净，取出来用同一个判定函数 ——
+  // 两端必须用同一套阈值，否则列表标红而详情页说正常。
+  const bpAlerts = new Map<string, boolean>()
+  for (const id of ids) {
+    const vs = db.prepare('SELECT systolic, diastolic FROM vitals WHERE patient_id = ? AND date = ?')
+      .all(id, today) as any[]
+    bpAlerts.set(id, vs.some(isBpAbnormal))
+  }
 
   res.json({
     patients: rows.map((r) => ({
       id: r.id, name: r.name, gender: r.gender, ageBand: r.age_band,
       stage: r.stage ?? '', todayDone: r.today_done, todayTotal: r.today_total,
+      pendingCount: r.pending_count, uploadsToday: r.uploads_today,
+      bpAlert: bpAlerts.get(r.id) ?? false,
+      // 主责/协管才能点进详情；其余只在名单里呈现服务规模
+      canOpen: r.access === 'primary' || r.access === 'owner' || req.user!.role === 'admin',
     })),
   })
+})
+
+/**
+ * 建档。
+ *
+ * 2026-08-30 用户裁决：**不预置假病例**，另 6 位患者改由真实录入产生。
+ * 因此这里只收最基本的身份与照护信息 —— 诊断、评估、用药、计划都要
+ * 专业人员按实际情况录入，本接口不替他们生成任何医学内容。
+ *
+ * 建档人自动成为主责康复师。
+ */
+patientsRouter.post('/', requireAuth, requireRole('therapist', 'admin'), (req, res) => {
+  const db = getDb()
+  const { name, gender, ageBand, stage, caregiverName, caregiverRelation } = req.body ?? {}
+  if (typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'bad_request', message: '姓名不能为空' })
+  }
+  if (gender !== '男' && gender !== '女') {
+    return res.status(400).json({ error: 'bad_request', message: '请选择性别' })
+  }
+
+  const t = now()
+  const id = `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`
+
+  db.transaction(() => {
+    db.prepare(`INSERT INTO patients
+      (id,name,gender,age_band,living_situation,psychosocial,communication,avatar,
+       primary_therapist_id,origin,status,created_at,updated_at)
+      VALUES (?,?,?,?,'','','','',?,'synthetic','active',?,?)`)
+      .run(id, name.trim(), gender, typeof ageBand === 'string' ? ageBand : '', req.user!.sub, t, t)
+    db.prepare('INSERT INTO patient_members (patient_id,user_id,relation,access,granted_at,granted_by) VALUES (?,?,?,?,?,?)')
+      .run(id, req.user!.sub, '主管康复师', 'primary', t, req.user!.sub)
+    db.prepare('INSERT INTO patient_diagnosis (patient_id,stage,comorbidities) VALUES (?,?,\'[]\')')
+      .run(id, typeof stage === 'string' ? stage : '')
+    db.prepare('INSERT INTO patient_function (patient_id,risks,care_alerts) VALUES (?,\'[]\',\'[]\')').run(id)
+    db.prepare('INSERT INTO patient_goals (patient_id,short_term) VALUES (?,\'[]\')').run(id)
+    db.prepare(`INSERT INTO patient_contact
+      (patient_id,caregiver_name,caregiver_relation,assistive_devices,past_history)
+      VALUES (?,?,?,'[]','[]')`)
+      .run(id, typeof caregiverName === 'string' ? caregiverName : '',
+           typeof caregiverRelation === 'string' ? caregiverRelation : '')
+    db.prepare(`INSERT INTO audit_log (id,user_id,action,entity,entity_id,detail,at)
+      VALUES (?,?,'create','patient',?,?,?)`)
+      .run(`al-${Date.now()}`, req.user!.sub, id, JSON.stringify({ name: name.trim() }), t)
+  })()
+
+  res.status(201).json({ id })
 })
 
 /** 动态层全量 —— 对应前端的 useDemoState() */
@@ -72,6 +139,61 @@ patientsRouter.get('/:id/state', requireAuth, requirePatientAccess(), (req, res)
       SELECT e.*, u.display_name AS therapist_name
       FROM escalations e LEFT JOIN users u ON u.id = e.answered_by
       WHERE e.patient_id = ? ORDER BY e.at`).all(id) as any[]).map(toEscalation),
+  })
+})
+
+/**
+ * 档案包 —— 一次取齐页面渲染所需的稳定层数据。
+ *
+ * 拆成 4 个接口的话，首屏要连打 4 次；这些数据只在复评后变，
+ * 合成一个包更划算。动态层仍走 /state，两者变更频率差好几个数量级。
+ */
+patientsRouter.get('/:id/profile', requireAuth, requirePatientAccess(), (req, res) => {
+  const db = getDb()
+  const id = one(req.params.id)
+  const p = db.prepare('SELECT * FROM patients WHERE id = ?').get(id) as any
+  if (!p) return res.status(404).json({ error: 'not_found' })
+
+  const func = db.prepare('SELECT * FROM patient_function WHERE patient_id = ?').get(id) as any
+  const patient = toPatient(p, {
+    diagnosis: db.prepare('SELECT * FROM patient_diagnosis WHERE patient_id = ?').get(id),
+    func,
+    goals: db.prepare('SELECT * FROM patient_goals WHERE patient_id = ?').get(id),
+    contact: db.prepare('SELECT * FROM patient_contact WHERE patient_id = ?').get(id),
+    meds: db.prepare('SELECT * FROM medications WHERE patient_id = ? ORDER BY sort_order').all(id) as any[],
+    assessments: db.prepare('SELECT * FROM assessments WHERE patient_id = ? ORDER BY sort_order').all(id) as any[],
+    admission: db.prepare('SELECT * FROM admissions WHERE patient_id = ? LIMIT 1').get(id),
+    events: db.prepare('SELECT * FROM care_events WHERE patient_id = ? ORDER BY date').all(id) as any[],
+  })
+
+  // active_to IS NULL = 当前生效的那版计划。历史打卡回看仍能对上当时的版本，
+  // 因为 check_ins 存的是 task_id，任务行本身不删。
+  const tasks = (db.prepare(
+    'SELECT * FROM task_defs WHERE patient_id = ? AND active_to IS NULL ORDER BY scheduled_time',
+  ).all(id) as any[]).map(toTaskDef)
+
+  const th = db.prepare(
+    'SELECT id, display_name, title FROM users WHERE id = ?',
+  ).get(p.primary_therapist_id) as any
+
+  const planConfirmedOn = (db.prepare(
+    'SELECT confirmed_on FROM task_defs WHERE patient_id = ? AND confirmed_on IS NOT NULL ORDER BY confirmed_on DESC LIMIT 1',
+  ).get(id) as any)?.confirmed_on ?? null
+
+  res.json({
+    patient,
+    // 「今日须注意」：绑定具体评估结论的照护动作，按患者存（迁移 0002）。
+    // 不放进 Patient 里 —— types.ts 是双端冻结契约，这里作为兄弟字段下发即可。
+    careAlerts: (() => { try { return JSON.parse(func?.care_alerts ?? '[]') } catch { return [] } })(),
+    tasks,
+    therapist: th ? { id: th.id, name: th.display_name, title: th.title ?? '' } : null,
+    reminders: (db.prepare(
+      'SELECT * FROM reminders WHERE patient_id = ? AND enabled = 1 ORDER BY time',
+    ).all(id) as any[]).map(toReminder),
+    planConfirmedOn,
+    homecareStart: (db.prepare(
+      'SELECT min(date) d FROM check_ins WHERE patient_id = ?',
+    ).get(id) as any)?.d ?? null,
   })
 })
 
@@ -270,13 +392,28 @@ patientsRouter.get('/inbox/pending', requireAuth, (req, res) => {
   if (ids.length === 0) return res.json({ escalations: [] })
   const ph = ids.map(() => '?').join(',')
   const rows = db.prepare(`
-    SELECT e.*, p.name AS patient_name, u.display_name AS therapist_name
+    SELECT e.*, p.name AS patient_name, u.display_name AS therapist_name,
+           c.caregiver_name, c.caregiver_relation,
+           t.title AS task_title, t.scheduled_time AS task_time
     FROM escalations e
-    JOIN patients p ON p.id = e.patient_id
-    LEFT JOIN users u ON u.id = e.answered_by
-    WHERE e.patient_id IN (${ph}) AND e.status = 'pending'
+    JOIN patients p            ON p.id = e.patient_id
+    LEFT JOIN users u          ON u.id = e.answered_by
+    LEFT JOIN patient_contact c ON c.patient_id = e.patient_id
+    LEFT JOIN task_defs t      ON t.id = e.task_id
+    WHERE e.patient_id IN (${ph})
     ORDER BY e.at DESC`).all(...ids) as any[]
-  res.json({ escalations: rows.map((r) => ({ ...toEscalation(r), patientName: r.patient_name })) })
+
+  const shape = (r: any) => ({
+    ...toEscalation(r),
+    patientName: r.patient_name,
+    caregiverName: r.caregiver_name ?? '',
+    caregiverRelation: r.caregiver_relation ?? '',
+    taskLabel: r.task_title ? `${r.task_time} ${r.task_title}` : undefined,
+  })
+  res.json({
+    escalations: rows.filter((r) => r.status === 'pending').map(shape),
+    answered: rows.filter((r) => r.status === 'answered').map(shape),
+  })
 })
 
 /**

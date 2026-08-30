@@ -1,7 +1,6 @@
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
-import { currentSession, signOut } from '../../auth/auth'
-import { therapist } from '../../data/seed'
-import { pendingEscalations, useDemoLoaded, useDemoState } from '../../store/store'
+import { useEffect, useState } from 'react'
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { authFetch, currentSession, signOut } from '../../auth/auth'
 import { IconLeaf } from '../../components/Icons'
 import { PatientListView } from './PatientListView'
 import { PatientDetail } from './PatientDetail'
@@ -16,21 +15,31 @@ import '../../styles/app.css'
  */
 export function TherapistShell() {
   const nav = useNavigate()
+  const loc = useLocation()
   const session = currentSession()
-  const state = useDemoState()
-  const loaded = useDemoLoaded()
-  const pending = pendingEscalations(state).length
+
+  /**
+   * 待处理角标是**跨患者**的，不能读 store —— store 的缓存只装当前患者。
+   * 换页时重取一次：康复师回复完再切回来，角标要跟着降下去。
+   */
+  const [pending, setPending] = useState(0)
+  useEffect(() => {
+    let alive = true
+    void (async () => {
+      try {
+        const res = await authFetch('/api/patients/inbox/pending')
+        if (!res.ok) return
+        const d = await res.json()
+        if (alive) setPending(d.escalations?.length ?? 0)
+      } catch { /* 会话失效由 authFetch 处理 */ }
+    })()
+    return () => { alive = false }
+  }, [loc.pathname])
 
   const NAV = [
     { to: '/therapist', label: '在管患者', end: true },
     { to: '/therapist/inbox', label: '待处理', badge: pending },
   ]
-
-  // 首屏数据来自服务端，未到之前先不渲染 —— 否则会闪一下"全部未完成"
-
-  // 再跳成真实值，康复师看到的第一眼是错的。
-
-  if (!loaded) return <div className="app" style={{ minHeight: '100vh' }} />
 
 
   return (
@@ -56,7 +65,7 @@ export function TherapistShell() {
         <div className="topbar-right">
           <span className="who">
             <span className="who-dot">{session?.displayName?.[0] ?? '·'}</span>
-            {session?.displayName} · {therapist.title}
+            {session?.displayName}{session?.title ? ` · ${session.title}` : ''}
           </span>
           <button className="btn-quiet" onClick={() => { signOut(); nav('/therapist/login', { replace: true }) }}>
             退出

@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { patient, taskDefs, therapist, toISODate, videos } from '../../data/seed'
-import { VIDEO_STEPS } from '../../data/videoSteps'
+import {toISODate} from '../../data/seed'
+import { usePatientData, useContent } from '../../data/context'
 import { addUpload, effectiveStatus, setCheckIn, useDemoState } from '../../store/store'
 import { VideoStage } from '../../components/VideoStage'
 import { UploadPanel } from '../../components/UploadPanel'
 import { IconAlert, IconCheck } from '../../components/Icons'
 
 export function VideoDetailView() {
+  const { patient, taskDefs, therapist } = usePatientData()
+  const { videos, videoSteps: VIDEO_STEPS } = useContent()
   const { id } = useParams()
   const state = useDemoState()
   const stepsRef = useRef<HTMLDivElement>(null)

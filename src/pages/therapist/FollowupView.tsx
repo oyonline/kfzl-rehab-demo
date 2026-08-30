@@ -1,12 +1,15 @@
-import { patient, taskDefs, toISODate, videos } from '../../data/seed'
+import {toISODate} from '../../data/seed'
+import { usePatientData, useContent } from '../../data/context'
 import { VideoStage } from '../../components/VideoStage'
 import { effectiveStatus, todayCheckIns, useDemoState } from '../../store/store'
 import { IconAlert, IconCheck, IconClock, IconPlay } from '../../components/Icons'
 
 export function FollowupView() {
+  const { patient, taskDefs } = usePatientData()
+  const { videos } = useContent()
   const state = useDemoState()
   const today = toISODate(new Date())
-  const rows = todayCheckIns(state, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
+  const rows = todayCheckIns(state, taskDefs, today).map((r) => ({ ...r, status: effectiveStatus(r.task, r.checkIn) }))
   const done = rows.filter((r) => r.status === 'done').length
   const uploads = [...state.uploads].reverse()
 
@@ -16,7 +19,11 @@ export function FollowupView() {
     const date = toISODate(d)
     return state.checkIns.filter((c) => c.date === date && c.status === 'done').length
   })
-  const weekRate = Math.round((last7.reduce((a, b) => a + b, 0) / (taskDefs.length * 7)) * 100)
+  // 分母可能为 0：新建档案还没录入康复计划。不设防就是 NaN%，实测见过。
+  const weekDenom = taskDefs.length * 7
+  const weekRate = weekDenom > 0
+    ? Math.round((last7.reduce((a, b) => a + b, 0) / weekDenom) * 100)
+    : null
 
   // 不写死：换病例后写死的文案会变成假话（曾把洼田 Ⅱ 级写成「偶有呛咳」）
   const swallowAssessment = patient.assessments.find((a) => a.name.includes('洼田'))
@@ -27,7 +34,7 @@ export function FollowupView() {
       <section className="card card-pad">
         <div className="stats">
           <Stat k="今日完成" v={`${done}`} unit={`/ ${rows.length}`} />
-          <Stat k="近 7 日完成率" v={`${weekRate}`} unit="%" />
+          <Stat k="近 7 日完成率" v={weekRate === null ? '—' : `${weekRate}`} unit={weekRate === null ? undefined : '%'} />
           <Stat k="患侧" v={patient.functionStatus.affectedSide} small />
           <Stat k="吞咽" v={swallowBrief} small />
         </div>

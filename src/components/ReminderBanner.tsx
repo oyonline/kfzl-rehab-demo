@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { taskDefs } from '../data/seed'
+import { usePatientData } from '../data/context'
 import { useTodayReminders } from './ReminderLog'
 import { IconBell, IconChevron, IconClose } from './Icons'
 
@@ -28,6 +28,7 @@ import { IconBell, IconChevron, IconClose } from './Icons'
 const DISMISS_KEY = 'kfzl.rmbanner.dismissed'
 
 export function ReminderBanner() {
+  const { taskDefs } = usePatientData()
   const items = useTodayReminders()
   const [dismissed, setDismissed] = useState<string[]>(() => {
     try {

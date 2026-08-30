@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, NavLink, Route, Routes } from 'react-router-dom'
-import { PATIENT_ID, patient, toISODate } from '../../data/seed'
+import { Link, NavLink, Route, Routes, useParams } from 'react-router-dom'
+import {toISODate} from '../../data/seed'
+import { ContentProvider, PatientProvider, usePatientData } from '../../data/context'
 import { effectiveStatus, hasAbnormalVital, pendingEscalations, todayCheckIns, useDemoState } from '../../store/store'
 import { IconFile } from '../../components/Icons'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
@@ -10,12 +11,30 @@ import { ConsultView } from './ConsultView'
 import { GuidanceLogView } from './GuidanceLogView'
 import { VitalsPanel } from './VitalsPanel'
 
-/** 患者详情 —— 从列表进入，内部再按页签切换 */
+/**
+ * 患者详情 —— 从列表进入，内部再按页签切换。
+ *
+ * 与家属端同理拆两层：本层按路由参数提供上下文，内层消费。
+ * 患者 id 来自 URL，不再是写死的 PATIENT_ID —— 康复师点哪位就是哪位。
+ */
 export function PatientDetail() {
+  const { id } = useParams()
+  if (!id) return null
+  return (
+    <ContentProvider>
+      <PatientProvider patientId={id}>
+        <PatientDetailInner />
+      </PatientProvider>
+    </ContentProvider>
+  )
+}
+
+function PatientDetailInner() {
+  const { patientId: PATIENT_ID, patient, taskDefs } = usePatientData()
   const state = useDemoState()
   const [profileOpen, setProfileOpen] = useState(false)
 
-  const rows = todayCheckIns(state, toISODate(new Date()))
+  const rows = todayCheckIns(state, taskDefs, toISODate(new Date()))
   const done = rows.filter((r) => effectiveStatus(r.task, r.checkIn) === 'done').length
   const pending = pendingEscalations(state).length
   // 今日出现过超标血压时，页签上打一个红点 —— 康复师不必点进去才知道

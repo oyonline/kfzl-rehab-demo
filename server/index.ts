@@ -5,6 +5,7 @@ import { getDb } from './db/index.ts'
 import { authRouter } from './routes/auth.ts'
 import { patientsRouter } from './routes/patients.ts'
 import { kbRouter } from './routes/kb.ts'
+import { contentRouter } from './routes/content.ts'
 import { search } from './kb/search.ts'
 import { heartbeat } from './events/bus.ts'
 
@@ -44,6 +45,7 @@ getDb()
 app.use('/api/auth', authRouter)
 app.use('/api/patients', patientsRouter)
 app.use('/api/kb', kbRouter)
+app.use('/api/content', contentRouter)
 
 // SSE 心跳：代理与浏览器都会掐掉长时间无数据的连接，掐掉后前端不会自知
 setInterval(heartbeat, 25_000).unref()

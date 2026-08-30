@@ -1,14 +1,43 @@
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PATIENT_ID, patient } from '../../data/seed'
-import { pendingEscalations, useDemoState } from '../../store/store'
+import { authFetch } from '../../auth/auth'
+import type { Escalation } from '../../data/types'
 import { EscalationCard } from '../../components/EscalationCard'
 import { Lines } from '../../components/Lines'
 
-/** 全局待处理 —— 跨患者的待回复咨询集中在这里 */
+/**
+ * 全局待处理 —— 跨患者的待回复咨询集中在这里。
+ *
+ * 这一页**不属于任何单个患者**，因此不走 PatientProvider，也不读 store
+ * （store 的缓存是当前患者的）。直接问接口要跨患者数据。
+ */
+interface InboxItem extends Escalation {
+  patientName: string
+  caregiverName: string
+  caregiverRelation: string
+  taskLabel?: string
+}
+
 export function InboxView() {
-  const state = useDemoState()
-  const pending = pendingEscalations(state)
-  const answered = state.escalations.filter((e) => e.status === 'answered')
+  const [pending, setPending] = useState<InboxItem[]>([])
+  const [answered, setAnswered] = useState<InboxItem[]>([])
+  const [loaded, setLoaded] = useState(false)
+
+  const reload = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/patients/inbox/pending')
+      if (!res.ok) return
+      const d = await res.json()
+      setPending(d.escalations ?? [])
+      setAnswered(d.answered ?? [])
+    } catch { /* 会话失效由 authFetch 处理 */ } finally {
+      setLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => { void reload() }, [reload])
+
+  if (!loaded) return <div className="stack" />
 
   return (
     <div className="stack">
@@ -33,10 +62,14 @@ export function InboxView() {
             {pending.map((e) => (
               <div key={e.id}>
                 <div className="card-note" style={{ marginBottom: 8 }}>
-                  来自 <Link to={`/therapist/patients/${PATIENT_ID}`} style={{ color: 'var(--green-700)', fontWeight: 600 }}>{patient.name}</Link>
-                  {' · '}{patient.caregiver.name}（{patient.caregiver.relation}）
+                  来自 <Link to={`/therapist/patients/${e.patientId}`} style={{ color: 'var(--green-700)', fontWeight: 600 }}>{e.patientName}</Link>
+                  {e.caregiverName && <>{' · '}{e.caregiverName}（{e.caregiverRelation}）</>}
                 </div>
-                <EscalationCard esc={e} />
+                <EscalationCard
+                  esc={e}
+                  ctx={{ patientId: e.patientId, caregiverName: e.caregiverName, taskLabel: e.taskLabel }}
+                  onAnswered={() => { void reload() }}
+                />
               </div>
             ))}
           </div>
@@ -55,7 +88,7 @@ export function InboxView() {
                 <div style={{ fontSize: 'var(--t-sm)', fontWeight: 550 }}>{e.question}</div>
                 <Lines text={e.answer ?? ''} className="lines-sm lines-ink2" />
                 <div style={{ fontSize: 'var(--t-xs)', color: 'var(--ink-4)', marginTop: 6 }}>
-                  {e.therapistName} · {e.answeredAt && new Date(e.answeredAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {e.patientName} · {e.therapistName} · {e.answeredAt && new Date(e.answeredAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </li>
             ))}

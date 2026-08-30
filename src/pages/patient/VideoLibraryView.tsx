@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
-import { VIDEO_CATEGORIES, taskDefs, videos } from '../../data/seed'
-import { VIDEO_STEPS } from '../../data/videoSteps'
+import { usePatientData, useContent } from '../../data/context'
 import { IconPlay } from '../../components/Icons'
 
 /**
@@ -13,6 +12,8 @@ import { IconPlay } from '../../components/Icons'
  * 不留空标题。
  */
 export function VideoLibraryView() {
+  const { taskDefs } = usePatientData()
+  const { videoCategories: VIDEO_CATEGORIES, videos, videoSteps: VIDEO_STEPS } = useContent()
   return (
     <div className="stack">
       <div className="crumb">

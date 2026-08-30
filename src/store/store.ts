@@ -21,7 +21,7 @@
 
 import { useSyncExternalStore } from 'react'
 import type { CheckIn, CheckInStatus, ChatMessage, DemoState, Escalation, Guidance, TaskDef, VideoUpload, VitalRecord } from '../data/types'
-import { PATIENT_ID, isBpAbnormal, taskDefs, toISODate } from '../data/seed'
+import { isBpAbnormal, toISODate } from '../data/seed'
 import { authFetch, SessionExpiredError } from '../auth/auth'
 
 /** schemaVersion 保留只为不改 DemoState 契约；版本迁移已交给数据库迁移脚本 */
@@ -36,7 +36,9 @@ function emptyState(): DemoState {
 
 let cache: DemoState = emptyState()
 let loaded = false
-let patientId = PATIENT_ID
+// 空串 = 还没有当前患者。不给默认值 —— 给了就可能在 PatientProvider
+// 设值之前抢先去拉某位固定患者的数据，那正是 P4 要根除的「写死林奶奶」。
+let patientId = ''
 const listeners = new Set<() => void>()
 
 function emit() {
@@ -67,6 +69,7 @@ let dirty = false
  * 表现是「对方改了，我这边没动」。所以进行中再被请求时标记 dirty，结束后补拉一次。
  */
 async function load(): Promise<void> {
+  if (!patientId) return
   if (loading) {
     dirty = true
     return loading
@@ -98,6 +101,7 @@ let streamAbort: AbortController | null = null
 let retry = 0
 
 async function stream() {
+  if (!patientId) return
   const ac = new AbortController()
   streamAbort = ac
   try {
@@ -310,6 +314,23 @@ export function answerEscalation(id: string, answer: string, therapistName: stri
   push(`/api/patients/${patientId}/escalations/${id}`, 'PATCH', { answer, therapistName, messageId })
 }
 
+/**
+ * 跨患者回复咨询 —— 康复师在「待处理」页处理别的患者时用。
+ *
+ * 不走乐观更新：本地缓存装的是**当前患者**的数据，把别人的记录塞进去
+ * 会让当前页面凭空多出不属于这位患者的条目。直接提交，由调用方刷新列表。
+ */
+export async function answerEscalationFor(targetPatientId: string, escId: string, answer: string) {
+  const res = await authFetch(`/api/patients/${targetPatientId}/escalations/${escId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ answer, messageId: nextId('msg', new Date()) }),
+  })
+  if (!res.ok) throw new Error(`回复失败 ${res.status}`)
+  // 若正好是当前患者，本地也要同步
+  if (targetPatientId === patientId) void load()
+}
+
 export function addVital(systolic: number, diastolic: number, by: VitalRecord['by'] = '家属') {
   const at = new Date()
   const rec: VitalRecord = {
@@ -340,8 +361,15 @@ export function hasAbnormalVital(state: DemoState, date = toISODate(new Date()))
   return todayVitals(state, date).some(isBpAbnormal)
 }
 
-export function todayCheckIns(state: DemoState, date = toISODate(new Date())) {
-  return taskDefs.map((t) => ({
+/**
+ * 今日任务与对应打卡。
+ *
+ * P4 起必须把当前患者的任务传进来 —— 原先直接用 seed 里的模块级 taskDefs，
+ * 等于每位患者都套林奶奶的计划。实测过：新建的空档案页面会显示出
+ * 林奶奶的 7 项任务，且「今日 0/7」，全是假的。
+ */
+export function todayCheckIns(state: DemoState, tasks: TaskDef[], date = toISODate(new Date())) {
+  return tasks.map((t) => ({
     task: t,
     checkIn: state.checkIns.find((c) => c.taskId === t.id && c.date === date),
   }))

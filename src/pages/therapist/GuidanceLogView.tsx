@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { patient, therapist } from '../../data/seed'
+import { usePatientData } from '../../data/context'
 import { addGuidance, useDemoState } from '../../store/store'
 import { IconSend } from '../../components/Icons'
 import { Lines } from '../../components/Lines'
 
 export function GuidanceLogView() {
+  const { patient, therapist } = usePatientData()
   const state = useDemoState()
   const [draft, setDraft] = useState('')
   const list = [...state.guidances].reverse()

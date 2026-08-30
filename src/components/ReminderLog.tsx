@@ -1,5 +1,6 @@
-import { DAILY_REMINDERS, abnormalBpReminder } from '../data/reminders'
-import { isBpAbnormal, taskDefs, toISODate } from '../data/seed'
+import {isBpAbnormal, toISODate} from '../data/seed'
+import { abnormalBpReminder } from '../data/reminders'
+import { usePatientData } from '../data/context'
 import { effectiveStatus, useDemoState } from '../store/store'
 import { IconBell, IconCheck } from './Icons'
 
@@ -26,6 +27,7 @@ const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
  * 判断已推送／待推送，把机制以记录形式呈现，不伪造推送时间。
  */
 export function useTodayReminders(): ReminderItem[] {
+  const { taskDefs, reminders: DAILY_REMINDERS } = usePatientData()
   const state = useDemoState()
   const now = new Date()
   const today = toISODate(now)

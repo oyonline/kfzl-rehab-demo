@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BP_SAFE, isBpAbnormal, patient, therapist } from '../../data/seed'
+import {BP_SAFE, isBpAbnormal} from '../../data/seed'
+import { usePatientData } from '../../data/context'
 import { addGuidance, useDemoState } from '../../store/store'
 import { BpChart } from '../../components/BpChart'
 import { IconAlert, IconCheck, IconSend } from '../../components/Icons'
@@ -15,6 +16,7 @@ import { IconAlert, IconCheck, IconSend } from '../../components/Icons'
  * 不为血压另起一套。
  */
 export function VitalsPanel() {
+  const { patient, therapist } = usePatientData()
   const state = useDemoState()
   const [draft, setDraft] = useState('')
   const [sent, setSent] = useState(false)

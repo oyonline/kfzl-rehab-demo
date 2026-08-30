@@ -1,4 +1,4 @@
-import { patient, therapist } from '../../data/seed'
+import { usePatientData } from '../../data/context'
 import { pendingEscalations, useDemoState } from '../../store/store'
 import { IconChat, IconUser } from '../../components/Icons'
 import { EscalationCard } from '../../components/EscalationCard'
@@ -9,6 +9,7 @@ import { EscalationCard } from '../../components/EscalationCard'
  * 2. 家属点「转康复师」后要在这里形成待处理项，否则那个按钮是死的。
  */
 export function ConsultView() {
+  const { patient, therapist } = usePatientData()
   const state = useDemoState()
   const pending = pendingEscalations(state)
 
