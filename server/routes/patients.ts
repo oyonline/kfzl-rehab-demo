@@ -191,6 +191,10 @@ patientsRouter.get('/:id/profile', requireAuth, requirePatientAccess(), (req, re
       'SELECT * FROM reminders WHERE patient_id = ? AND enabled = 1 ORDER BY time',
     ).all(id) as any[]).map(toReminder),
     planConfirmedOn,
+    // 建档日期取 patients.created_at —— 这才是「档案何时建立」。
+    // 此前抽屉标着「建档」却取首次打卡日期，两者对林奶奶恰好都是 7-07，
+    // 新建患者没有打卡就露馅（显示成别人的日期或半截空文字）。
+    createdOn: (p.created_at ?? '').slice(0, 10) || null,
     homecareStart: (db.prepare(
       'SELECT min(date) d FROM check_ins WHERE patient_id = ?',
     ).get(id) as any)?.d ?? null,

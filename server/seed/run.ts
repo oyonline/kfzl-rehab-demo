@@ -106,8 +106,10 @@ const seed = db.transaction(() => {
       a.tile?.label ?? null, a.tile?.value ?? null, a.tile?.note ?? null,
       a.date, a.assessor, a.note, a.visibleToFamily ? 1 : 0, i))
 
+  // admission 于 2026-08-30 改为可选（新建档案本来就没有）；种子里林奶奶有，
+  // 但类型上必须显式判空，否则改动契约后这里会静默取到 undefined
   const ad = p.admission
-  db.prepare(`INSERT INTO admissions
+  if (ad) db.prepare(`INSERT INTO admissions
     (id,patient_id,admitted_on,discharged_on,facility,department,chief_complaint,
      admission_diagnosis,course,discharge_status,discharge_orders) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
     .run(`adm-${p.id}-1`, p.id, ad.admittedOn, ad.dischargedOn, ad.facility, ad.department,

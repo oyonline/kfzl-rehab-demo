@@ -126,8 +126,14 @@ export interface Patient {
     shortTerm: string[]
     nextReviewDate: ISODate
   }
-  /** 入院与出院记录 */
-  admission: Admission
+  /**
+   * 入院与出院记录。
+   *
+   * 2026-08-30 改为可选：多患者化之后，新建的档案在康复师逐项录入之前
+   * 本来就没有入院记录。此前声明为必填，而服务端在无记录时返回 undefined，
+   * ProfileDrawer 直接取 `patient.admission.facility` 即白屏崩溃（实测踩到）。
+   */
+  admission?: Admission
   /** 诊疗与照护经过 */
   careEvents: CareEvent[]
   emergencyContact: { name: string; relation: string; phoneMasked: string }
