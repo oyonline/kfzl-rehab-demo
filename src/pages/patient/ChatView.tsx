@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FALLBACK_ANSWER, PRESET_QA, type PresetQA } from '../../data/qa'
 import { PLAN_CONFIRMED_ON, patient, taskDefs, therapist } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
+import { authFetch } from '../../auth/auth'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
 import { InlineRich } from '../../components/RichText'
 import { ThinkingTrace, useTypewriter, type TraceStep } from '../../components/ThinkingTrace'
@@ -68,21 +69,64 @@ function RichText({ text }: { text: string }) {
   return <p><InlineRich text={text} /></p>
 }
 
+/** 知识库命中项 —— 与 /api/kb/search 的返回对齐 */
+export interface KbHit {
+  docId: string
+  title: string
+  heading?: string
+  sourceLabel: string
+  provenance: 'attributed' | 'unattributed' | 'ai_flagged'
+  collectionName: string
+  disclaimer?: string
+}
+
+/** 检索知识库。失败不抛，返回空数组 —— 检索挂了也不能让问答挂掉 */
+async function kbSearch(q: string): Promise<{ hits: KbHit[]; disclaimers: string[] }> {
+  try {
+    const res = await authFetch('/api/kb/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q, topK: 4, patientId: patient.id }),
+    })
+    if (!res.ok) return { hits: [], disclaimers: [] }
+    const d = await res.json()
+    return { hits: d.hits ?? [], disclaimers: d.disclaimers ?? [] }
+  } catch {
+    return { hits: [], disclaimers: [] }
+  }
+}
+
 /**
- * 依据步骤 —— 只写系统真实使用的东西。
- * 档案与康复师确认计划确实是回答的来源（也就是答案下方那排"依据"标签）；
- * 安全边界确实在起作用（超出范围会走转康复师）。没有检索层，因此不写"检索知识库"。
+ * 依据步骤 —— 只写系统真实做过的事。
+ *
+ * 档案与康复师确认计划确实注入了提示词；安全边界确实在起作用
+ * （超出范围会走转康复师）。
+ *
+ * 「检索知识库」这一步在 P5（2026-08-30）之前**不写**，因为当时没有检索层，
+ * 写了就是宣称系统有它没有的能力。现在语料已入库、检索真的在跑，
+ * 所以如实写上，且只在真有命中时才出现，条数与文档名都取自实际返回。
  */
-function traceFor(q: PresetQA | null): TraceStep[] {
-  return [
+function traceFor(q: PresetQA | null, hits: KbHit[] = []): TraceStep[] {
+  const steps: TraceStep[] = [
     { label: '读取康复档案', detail: `${patient.name} · ${patient.diagnosis.strokeType} · ${patient.diagnosis.stage}` },
     { label: '结合康复师确认的计划', detail: `${PLAN_CONFIRMED_ON} 制定，含今日 ${taskDefs.length} 项安排` },
-    {
-      label: '按安全边界组织回答',
-      detail: q?.escalateHint ?? '超出可安全回答范围的部分交回康复师',
-    },
   ]
+  if (hits.length > 0) {
+    steps.push({
+      label: '检索知识库',
+      detail: `命中 ${hits.length} 篇：${hits.map((h) => h.title.slice(0, 14)).join('、')}`,
+    })
+  }
+  steps.push({
+    label: '按安全边界组织回答',
+    detail: q?.escalateHint ?? '超出可安全回答范围的部分交回康复师',
+  })
+  return steps
 }
+
+/** 命中项 → 「依据」标签。出处如实带出，不美化 */
+const hitsToBasis = (hits: KbHit[]) =>
+  hits.map((h) => `《${h.title.slice(0, 18)}》${h.sourceLabel}`)
 
 /** 前端等待上限。比服务端的 15s 略长，让服务端的错误先浮出来 */
 const LLM_ABORT_MS = 20000
@@ -159,7 +203,7 @@ export function splitDualSource(text: string): { external?: string; team: string
 export function ChatView() {
   const state = useDemoState()
   const [draft, setDraft] = useState('')
-  const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null } | null>(null)
+  const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null; hits: KbHit[]; disclaimers: string[] } | null>(null)
   const [streamingId, setStreamingId] = useState<string | null>(null)
   const [streamingText, setStreamingText] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
@@ -168,7 +212,7 @@ export function ChatView() {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages.length, trace, streamingId])
 
   /** 调用 LLM API，流式接收回答 */
-  async function callLLM(userQuestion: string, presetQ: PresetQA | null) {
+  async function callLLM(userQuestion: string, presetQ: PresetQA | null, hits: KbHit[] = [], disclaimers: string[] = []) {
     // 构建消息历史（最近 10 轮）
     const recentMessages = messages.slice(-10).map(m => ({
       role: m.role === 'family' ? 'user' : 'assistant',
@@ -245,9 +289,13 @@ export function ChatView() {
         text: team || fullText,
         externalText: external,
         answerSource: 'model',
-        // 如实：这两样确实注入了提示词，模型是据此作答的。
-        // 原先写死的两条里「康复师确认计划」当时并未注入，属于说了没做的事。
-        basis: [`${patient.name}的康复档案`, `${PLAN_CONFIRMED_ON} 康复师确认计划`],
+        // 如实：档案确实注入了提示词；知识库命中项由服务端一并注入并回传，
+        // 这里直接用真实文档名与出处，不再是写死的两条。
+        basis: [
+          `${patient.name}的康复档案`,
+          `${PLAN_CONFIRMED_ON} 康复师确认计划`,
+          ...hitsToBasis(hits),
+        ],
         escalated: false,
       })
       setStreamingText('')
@@ -256,20 +304,28 @@ export function ChatView() {
       // 降级到预设答案；自由提问没有预设时走 FALLBACK_ANSWER（v0.1 §12：不硬答，转人工）
       const fallback = presetQ ?? FALLBACK_ANSWER
       setStreamingText('')
+      // 本机无模型时走这里。检索仍然有效 —— 它不依赖模型，
+      // 所以「依据」照样是真实命中的文档，断网也成立。
       const id = addMessage({
         role: 'ai',
-        text: fallback.answer.join('\n'),
+        text: [
+          ...fallback.answer,
+          ...(disclaimers.length ? ['', ...disclaimers] : []),
+        ].join('\n'),
         answerSource: 'preset_fallback',
-        basis: fallback.basis,
+        basis: [...fallback.basis, ...hitsToBasis(hits)],
         escalated: fallback.escalate,
       })
       setStreamingId(id)
     }
   }
 
-  function reply(q: PresetQA | null, asked: string) {
+  async function reply(q: PresetQA | null, asked: string) {
     addMessage({ role: 'family', text: asked })
-    setTrace({ steps: traceFor(q), qa: q })
+    // 预设问题走甲方原文，不检索；自由提问才检索，且先拿到命中再放依据动画，
+    // 这样动画里报的条数与文档名是真的，不是占位。
+    const { hits, disclaimers } = q ? { hits: [] as KbHit[], disclaimers: [] as string[] } : await kbSearch(asked)
+    setTrace({ steps: traceFor(q, hits), qa: q, hits, disclaimers })
   }
 
   /**
@@ -297,7 +353,7 @@ export function ChatView() {
       return
     }
     const asked = messages[messages.length - 1]?.text ?? ''
-    callLLM(asked, null)
+    callLLM(asked, null, trace.hits, trace.disclaimers)
     setTrace(null)
   }, [trace, messages])
 
@@ -431,7 +487,7 @@ export function ChatView() {
         {unasked.length > 0 && (
           <div className="suggests">
             {unasked.map((q) => (
-              <button className="suggest" key={q.id} onClick={() => reply(q, q.question)}>{q.question}</button>
+              <button className="suggest" key={q.id} onClick={() => { void reply(q, q.question) }}>{q.question}</button>
             ))}
           </div>
         )}
@@ -445,7 +501,7 @@ export function ChatView() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && draft.trim()) {
                 e.preventDefault()
-                reply(PRESET_QA.find((q) => q.question === draft.trim()) ?? null, draft.trim())
+                void reply(PRESET_QA.find((q) => q.question === draft.trim()) ?? null, draft.trim())
                 setDraft('')
               }
             }}
@@ -454,7 +510,7 @@ export function ChatView() {
           <button
             className="btn btn-lg"
             disabled={!draft.trim()}
-            onClick={() => { reply(PRESET_QA.find((q) => q.question === draft.trim()) ?? null, draft.trim()); setDraft('') }}
+            onClick={() => { void reply(PRESET_QA.find((q) => q.question === draft.trim()) ?? null, draft.trim()); setDraft('') }}
           >
             <IconSend size={14} /> 发送
           </button>

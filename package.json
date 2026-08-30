@@ -9,13 +9,15 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "server": "tsx server/index.ts",
-    "seed": "tsx server/seed/run.ts"
+    "seed": "tsx server/seed/run.ts",
+    "kb:import": "tsx server/kb/import.ts"
   },
   "dependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "better-sqlite3": "^13.0.3",
     "coze-coding-dev-sdk": "0.7.27",
     "express": "^5.2.1",
+    "fflate": "^0.8.3",
     "jose": "^6.2.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

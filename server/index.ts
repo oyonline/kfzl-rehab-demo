@@ -4,6 +4,8 @@ import { dirname, join } from 'path'
 import { getDb } from './db/index.ts'
 import { authRouter } from './routes/auth.ts'
 import { patientsRouter } from './routes/patients.ts'
+import { kbRouter } from './routes/kb.ts'
+import { search } from './kb/search.ts'
 import { heartbeat } from './events/bus.ts'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -41,6 +43,7 @@ getDb()
 
 app.use('/api/auth', authRouter)
 app.use('/api/patients', patientsRouter)
+app.use('/api/kb', kbRouter)
 
 // SSE 心跳：代理与浏览器都会掐掉长时间无数据的连接，掐掉后前端不会自知
 setInterval(heartbeat, 25_000).unref()
@@ -103,6 +106,37 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'messages 必须包含至少一条 user 消息' })
     }
 
+    /**
+     * 检索增强（P5）。此前自由提问是把患者档案拼进提示词直接问模型，
+     * 甲方那 57 篇资料一篇都没被用上。现在先检索、再让模型照着资料答，
+     * 并把命中项作为「依据」回给前端。
+     *
+     * 检索失败不阻断回答 —— 退回原来的纯档案模式，比整个问答挂掉强。
+     */
+    const lastUser = [...messages].reverse().find((m: any) => m.role === 'user')
+    let hits: ReturnType<typeof search> = []
+    try {
+      hits = search(String(lastUser?.content ?? ''), { topK: 4 })
+    } catch (e) {
+      console.error('[kb] 检索失败，回退为纯档案回答', e)
+    }
+
+    const augmented = messages.map((m: any) => ({ ...m }))
+    if (hits.length > 0) {
+      const refs = hits.map((h, i) =>
+        `【资料${i + 1}】${h.title}${h.heading ? ` · ${h.heading}` : ''}\n${h.sourceLabel}\n${h.text}`,
+      ).join('\n\n')
+      const disclaimers = [...new Set(hits.map((h) => h.disclaimer).filter(Boolean))]
+      const sys = augmented.find((m: any) => m.role === 'system')
+      const block = `\n\n【检索到的资料】以下是从知识库里检索到的内容，回答时以它们为准。\n` +
+        `引用哪一条就在句末标注【资料N】。资料里没有的内容不要编造，也不要把资料\n` +
+        `当成针对这位老人的医嘱 —— 它们是通用科普，个体化建议仍以档案与康复师计划为准。\n` +
+        (disclaimers.length ? `必须在回答末尾附上：${disclaimers.join('；')}\n` : '') +
+        `\n${refs}`
+      if (sys) sys.content += block
+      else augmented.unshift({ role: 'system', content: block })
+    }
+
     // 动态引入：本地关掉 AI 时完全不加载这个 3.8MB 的包
     const { LLMClient, Config, HeaderUtils } = await import('coze-coding-dev-sdk')
 
@@ -117,7 +151,7 @@ app.post('/api/chat', async (req, res) => {
     const config = new Config({ timeout: LLM_TIMEOUT_MS })
     const client = new LLMClient(config, customHeaders)
 
-    const stream = client.stream(messages, {
+    const stream = client.stream(augmented, {
       model: model || 'doubao-seed-1-8-251228',
       temperature: 0.7,
     })
@@ -125,6 +159,15 @@ app.post('/api/chat', async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
+
+    // 先发一帧命中项：前端据此渲染真实的「依据」，不必等答案生成完
+    res.write(`data: ${JSON.stringify({
+      sources: hits.map((h) => ({
+        docId: h.docId, title: h.title, heading: h.heading,
+        sourceLabel: h.sourceLabel, provenance: h.provenance,
+        collectionName: h.collectionName, disclaimer: h.disclaimer,
+      })),
+    })}\n\n`)
 
     // 整条流也要有上限：SDK 的 timeout 管的是单次请求，
     // 流中途卡住不发新 chunk 时它不一定会断。
