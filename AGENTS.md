@@ -72,6 +72,7 @@ scripts/
 
 - 包管理器只用 pnpm
 - 不引入外部 CDN / 字体 / 图标库
+- Git 提交身份必须是用户本人：`ouyang <81409107@qq.com>`（沙箱默认的 coze noreply 身份不合规，已在仓库本地 git config 修正）
 
 ## 常见问题和预防
 
