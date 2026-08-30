@@ -79,3 +79,4 @@ scripts/
 - 登录态放 localStorage 会导致两端互顶 → 必须用 sessionStorage
 - 跨域名部署会导致 localStorage 不互通 → 必须同源
 - 视频未到位时不做假播放 → `videos[].src` 为空时显示海报 + 分步图文
+- 视频素材必须进 Git 仓库（public/videos/）：部署从仓库构建，gitignore 排除会导致线上缺视频且拿 HTML 冒充 404；且现场演示断网可用，不能用外部对象存储/CDN 当视频源
