@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { DEMO_CREDENTIALS, signIn, type Role } from '../auth/auth'
+import { signIn, type Role } from '../auth/auth'
 import { IconLeaf } from '../components/Icons'
 import '../styles/app.css'
 
@@ -14,19 +14,45 @@ interface Props {
   skin: 'warm' | 'cool'
 }
 
+/**
+ * 排练便利：只在开发模式预填表单。
+ *
+ * P2 起密码校验在服务端，前端不再持有任何凭据。这里的常量被
+ * `import.meta.env.DEV` 包住，Vite 生产构建会整块摇掉 ——
+ * `pnpm build` 的产物里不含账号密码，`pnpm dev` 仍然免手输。
+ */
+const DEV_PREFILL: Record<Role, { username: string; password: string }> = {
+  family: { username: 'chen', password: '123456' },
+  therapist: { username: 'xiaoting', password: '123456' },
+}
+
 /** 账号 + 密码登录，无验证码、无扫码、无第三方授权 */
 export function LoginPage({ role, title, subtitle, home, hint, skin }: Props) {
   const nav = useNavigate()
-  const cred = DEMO_CREDENTIALS[role]
-  const [username, setUsername] = useState(cred.username)
-  const [password, setPassword] = useState(cred.password)
+  const pre = import.meta.env.DEV ? DEV_PREFILL[role] : { username: '', password: '' }
+  const [username, setUsername] = useState(pre.username)
+  const [password, setPassword] = useState(pre.password)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    const session = signIn(username, password, role)
-    if (!session) return setError('账号或密码不正确')
-    nav(home, { replace: true })
+    if (busy) return
+    setError('')
+    setBusy(true)
+    try {
+      const session = await signIn(username, password, role)
+      if (!session) {
+        setError('账号或密码不正确')
+        return
+      }
+      nav(home, { replace: true })
+    } catch {
+      // 与「密码错」区分开：这是服务没起来或网络断了，让人知道该去查什么
+      setError('无法连接登录服务，请确认服务端已启动')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -44,14 +70,14 @@ export function LoginPage({ role, title, subtitle, home, hint, skin }: Props) {
           <form onSubmit={onSubmit}>
             <label className="field">
               <span>账号</span>
-              <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+              <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" disabled={busy} />
             </label>
             <label className="field">
               <span>密码</span>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" disabled={busy} />
             </label>
             {error && <p style={{ color: 'var(--miss)', fontSize: 'var(--t-sm)', marginBottom: 14 }}>{error}</p>}
-            <button className="btn btn-lg btn-block" type="submit">登录</button>
+            <button className="btn btn-lg btn-block" type="submit" disabled={busy}>{busy ? '登录中…' : '登录'}</button>
           </form>
         </div>
 

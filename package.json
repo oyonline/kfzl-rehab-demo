@@ -16,6 +16,7 @@
     "better-sqlite3": "^13.0.3",
     "coze-coding-dev-sdk": "0.7.27",
     "express": "^5.2.1",
+    "jose": "^6.2.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"

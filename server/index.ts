@@ -1,13 +1,15 @@
 import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { getDb } from './db/index.ts'
+import { authRouter } from './routes/auth.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const PROJECT_ROOT = join(__dirname, '..')
 
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = Number(process.env.PORT ?? 5000)
 
 /**
  * AI 开关 —— 一个仓两种跑法的分界点。
@@ -31,6 +33,11 @@ const AI_ENABLED = (() => {
 const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS ?? 15000)
 
 app.use(express.json())
+
+// 启动即建连并跑迁移：让「表缺失」这类问题在启动时暴露，而不是等第一个请求
+getDb()
+
+app.use('/api/auth', authRouter)
 
 app.get('/api/ai-status', (_req, res) => {
   res.json({ enabled: AI_ENABLED, timeoutMs: LLM_TIMEOUT_MS })
@@ -93,7 +100,14 @@ app.post('/api/chat', async (req, res) => {
     // 动态引入：本地关掉 AI 时完全不加载这个 3.8MB 的包
     const { LLMClient, Config, HeaderUtils } = await import('coze-coding-dev-sdk')
 
-    const customHeaders = HeaderUtils.extractForwardHeaders(req.headers)
+    // req.headers 是 IncomingHttpHeaders（值可能是 string[]），
+    // SDK 只认 Record<string,string>，先规整一次
+    const flatHeaders: Record<string, string> = {}
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === 'string') flatHeaders[k] = v
+      else if (Array.isArray(v)) flatHeaders[k] = v.join(', ')
+    }
+    const customHeaders = HeaderUtils.extractForwardHeaders(flatHeaders)
     const config = new Config({ timeout: LLM_TIMEOUT_MS })
     const client = new LLMClient(config, customHeaders)
 

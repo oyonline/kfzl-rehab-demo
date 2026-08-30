@@ -9,9 +9,10 @@
  */
 
 import { getDb, closeDb } from '../db/index.ts'
+import type { Assessment, CareEvent, Medication } from '../../src/data/types.ts'
 import { hashPassword } from '../auth/password.ts'
 import {
-  PATIENT_ID, patient, taskDefs, videos, therapist,
+  patient, taskDefs, videos, therapist,
   PLAN_CONFIRMED_ON, HOMECARE_START, buildHistory, buildVitals,
 } from '../../src/data/seed.ts'
 import { VIDEO_STEPS } from '../../src/data/videoSteps.ts'
@@ -88,13 +89,13 @@ const seed = db.transaction(() => {
 
   const insMed = db.prepare(`INSERT INTO medications
     (id,patient_id,name,dose,times,notes,confirmed,sort_order) VALUES (?,?,?,?,?,?,?,?)`)
-  p.medications.forEach((m, i) =>
+  p.medications.forEach((m: Medication, i: number) =>
     insMed.run(m.id, p.id, m.name, m.dose, J(m.times), m.notes ?? null, m.confirmed ? 1 : 0, i))
 
   const insAss = db.prepare(`INSERT INTO assessments
     (id,patient_id,name,value,level,tile_label,tile_value,tile_note,date,assessor,note,visible_to_family,sort_order)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-  p.assessments.forEach((a, i) =>
+  p.assessments.forEach((a: Assessment, i: number) =>
     insAss.run(`as-${p.id}-${i + 1}`, p.id, a.name, a.value, a.level ?? null,
       a.tile?.label ?? null, a.tile?.value ?? null, a.tile?.note ?? null,
       a.date, a.assessor, a.note, a.visibleToFamily ? 1 : 0, i))
@@ -108,7 +109,7 @@ const seed = db.transaction(() => {
 
   const insEvt = db.prepare(`INSERT INTO care_events
     (id,patient_id,date,kind,title,detail) VALUES (?,?,?,?,?,?)`)
-  p.careEvents.forEach((e, i) => insEvt.run(`ce-${p.id}-${i + 1}`, p.id, e.date, e.kind, e.title, e.detail))
+  p.careEvents.forEach((e: CareEvent, i: number) => insEvt.run(`ce-${p.id}-${i + 1}`, p.id, e.date, e.kind, e.title, e.detail))
 
   /* ---------- 内容库 ---------- */
   const insVid = db.prepare(`INSERT INTO videos
