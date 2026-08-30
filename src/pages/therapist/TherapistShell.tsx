@@ -5,6 +5,7 @@ import { IconLeaf } from '../../components/Icons'
 import { PatientListView } from './PatientListView'
 import { PatientDetail } from './PatientDetail'
 import { InboxView } from './InboxView'
+import { ReviewView } from './ReviewView'
 import '../../styles/app.css'
 
 /**
@@ -23,6 +24,15 @@ export function TherapistShell() {
    * 换页时重取一次：康复师回复完再切回来，角标要跟着降下去。
    */
   const [pending, setPending] = useState(0)
+  // 待审内容总数（语料 + 三类文案），与待回复咨询同样做成角标
+  const [reviewPending, setReviewPending] = useState(0)
+  // 审核页在同一路由内改状态，pathname 不变，靠事件通知重取
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    const h = () => setTick((n) => n + 1)
+    window.addEventListener('kfzl:review-changed', h)
+    return () => window.removeEventListener('kfzl:review-changed', h)
+  }, [])
   useEffect(() => {
     let alive = true
     void (async () => {
@@ -32,13 +42,21 @@ export function TherapistShell() {
         const d = await res.json()
         if (alive) setPending(d.escalations?.length ?? 0)
       } catch { /* 会话失效由 authFetch 处理 */ }
+      try {
+        const r = await authFetch('/api/review/summary')
+        if (!r.ok) return
+        const s = await r.json()
+        const n = Object.values(s).reduce((a: number, v: any) => a + (v?.pending ?? 0), 0)
+        if (alive) setReviewPending(n as number)
+      } catch { /* 同上 */ }
     })()
     return () => { alive = false }
-  }, [loc.pathname])
+  }, [loc.pathname, tick])
 
   const NAV = [
     { to: '/therapist', label: '在管患者', end: true },
     { to: '/therapist/inbox', label: '待处理', badge: pending },
+    { to: '/therapist/review', label: '内容审核', badge: reviewPending },
   ]
 
 
@@ -77,6 +95,7 @@ export function TherapistShell() {
         <Routes>
           <Route index element={<PatientListView />} />
           <Route path="inbox" element={<InboxView />} />
+          <Route path="review" element={<ReviewView />} />
           <Route path="patients/:id/*" element={<PatientDetail />} />
           <Route path="*" element={<PatientListView />} />
         </Routes>

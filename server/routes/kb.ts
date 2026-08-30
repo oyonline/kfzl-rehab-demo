@@ -7,6 +7,7 @@
  */
 
 import { Router } from 'express'
+import { randomUUID } from 'crypto'
 import { getDb } from '../db/index.ts'
 import { requireAuth, requireRole } from '../auth/middleware.ts'
 import { search, logSearch, sourceLabel } from '../kb/search.ts'
@@ -76,6 +77,16 @@ kbRouter.patch('/documents/:id', requireAuth, requireRole('therapist', 'admin'),
   if (!sets.length) return res.status(400).json({ error: 'bad_request', message: '没有可更新的字段' })
 
   db.prepare(`UPDATE kb_documents SET ${sets.join(', ')} WHERE id = ?`).run(...args, id)
+
+  // 与 /api/review 的三类文案一视同仁地留痕。P5 初版漏了这一段，
+  // 结果「语料被谁驳回」查不到，而这恰恰是版权与专业审核最需要追溯的一类。
+  db.prepare(
+    `INSERT INTO audit_log (id,user_id,action,entity,entity_id,detail,ip,at) VALUES (?,?,?,'kb_document',?,?,?,?)`,
+  ).run(
+    randomUUID(), req.user!.sub,
+    reviewStatus ? `review_${reviewStatus}` : 'kb_document_update',
+    id, JSON.stringify({ reviewStatus, enabled, weight }), req.ip ?? null, new Date().toISOString(),
+  )
   res.json({ ok: true })
 })
 
