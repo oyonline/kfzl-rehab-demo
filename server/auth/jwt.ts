@@ -15,30 +15,50 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..', '..')
-const SECRET_PATH = join(PROJECT_ROOT, 'data', '.jwt-secret')
 
 /** 8 小时：够覆盖一整天的演示或工作，又不会长到令牌泄露后长期有效 */
 export const TOKEN_TTL = '8h'
 
 /**
- * 密钥来源：环境变量优先；否则读本地文件；都没有则生成并落盘。
+ * 密钥来源：环境变量优先；否则生成并落盘到第一个可写目录；全不可写退回内存。
  *
  * 落盘而非每次启动随机生成 —— 否则服务端一重启（tsx 改代码就重启），
  * 所有已登录的标签页令牌全部失效，开发时每改一次代码就要重登两端。
- * data/ 已在 .gitignore 里，密钥不会进仓。
+ *
+ * 候选目录按环境排优先级：
+ * - DB_PATH 所在目录：部署管线下发的可写数据目录（FaaS 沙箱里项目目录只读，
+ *   写项目内路径会以 ENOENT 崩掉进程 —— 实测踩过）；
+ * - 项目 data/：本地开发，密钥持久、重启不掉登录态；
+ * - /tmp：FaaS 沙箱的标准可写目录。
+ * 密钥不进仓（相关目录均在 .gitignore）。
  */
 function loadSecret(): Uint8Array {
   const fromEnv = process.env.JWT_SECRET
   if (fromEnv && fromEnv.length >= 32) return new TextEncoder().encode(fromEnv)
 
-  mkdirSync(dirname(SECRET_PATH), { recursive: true })
-  if (!existsSync(SECRET_PATH)) {
-    writeFileSync(SECRET_PATH, randomBytes(48).toString('hex'), { mode: 0o600 })
-  } else {
-    // 修正历史上可能过宽的权限
-    try { chmodSync(SECRET_PATH, 0o600) } catch { /* 文件系统不支持时忽略 */ }
+  const candidates = [
+    process.env.DB_PATH ? dirname(process.env.DB_PATH) : null,
+    join(PROJECT_ROOT, 'data'),
+    '/tmp',
+  ].filter((d): d is string => Boolean(d))
+
+  for (const dir of candidates) {
+    try {
+      mkdirSync(dir, { recursive: true })
+      const secretPath = join(dir, '.jwt-secret')
+      if (!existsSync(secretPath)) {
+        writeFileSync(secretPath, randomBytes(48).toString('hex'), { mode: 0o600 })
+      } else {
+        // 修正历史上可能过宽的权限
+        try { chmodSync(secretPath, 0o600) } catch { /* 文件系统不支持时忽略 */ }
+      }
+      return new TextEncoder().encode(readFileSync(secretPath, 'utf8').trim())
+    } catch { /* 该目录不可写，试下一个 */ }
   }
-  return new TextEncoder().encode(readFileSync(SECRET_PATH, 'utf8').trim())
+
+  // 全部不可写：内存密钥。重启后已签发令牌失效（需重新登录），
+  // 演示可接受；设 JWT_SECRET 环境变量可彻底避免。
+  return new TextEncoder().encode(randomBytes(48).toString('hex'))
 }
 
 const SECRET = loadSecret()

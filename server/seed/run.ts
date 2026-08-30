@@ -9,6 +9,7 @@
  */
 
 import { getDb, closeDb } from '../db/index.ts'
+import { basename } from 'path'
 import type { Assessment, CareEvent, Medication } from '../../src/data/types.ts'
 import { hashPassword } from '../auth/password.ts'
 import {
@@ -190,13 +191,24 @@ const seed = db.transaction(() => {
     1, 1)
 })
 
-seed()
+/**
+ * 幂等灌种子：清空业务表再重灌。
+ * 服务端启动时检测到空库（部署环境没人手动跑 seed）也会调用它。
+ */
+export function runSeed(): void {
+  seed()
+}
 
 const count = (t: string) => (db.prepare(`SELECT count(*) c FROM ${t}`).get() as any).c
-console.log('种子灌入完成：')
-for (const t of ['users','patients','patient_members','medications','assessments','care_events',
-                 'videos','video_steps','task_defs','reminders','guidance_articles','preset_qa',
-                 'check_ins','vitals','kb_collections']) {
-  console.log(`  ${t.padEnd(20)} ${count(t)}`)
+
+/** 命令行直接执行时（pnpm seed）才走这段；被服务端 import 时只暴露 runSeed */
+if (process.argv[1] && import.meta.url.endsWith(basename(process.argv[1]))) {
+  runSeed()
+  console.log('种子灌入完成：')
+  for (const t of ['users','patients','patient_members','medications','assessments','care_events',
+                   'videos','video_steps','task_defs','reminders','guidance_articles','preset_qa',
+                   'check_ins','vitals','kb_collections']) {
+    console.log(`  ${t.padEnd(20)} ${count(t)}`)
+  }
+  closeDb()
 }
-closeDb()

@@ -13,7 +13,23 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..', '..')
 
-export const DB_PATH = process.env.DB_PATH ?? join(PROJECT_ROOT, 'data', 'app.db')
+/**
+ * 数据库路径解析：DB_PATH 环境变量优先（部署管线可下发）；
+ * 否则项目 data/（本地开发）；项目目录只读时（FaaS 沙箱实测踩过）退 /tmp。
+ * SQLite 是单文件库，位置只是持久化细节，不改变任何行为。
+ */
+function resolveDbPath(): string {
+  if (process.env.DB_PATH) return process.env.DB_PATH
+  const fallback = join(PROJECT_ROOT, 'data', 'app.db')
+  try {
+    mkdirSync(dirname(fallback), { recursive: true })
+    return fallback
+  } catch {
+    return '/tmp/kfzl-app.db'
+  }
+}
+
+export const DB_PATH = resolveDbPath()
 
 let db: Database.Database | null = null
 

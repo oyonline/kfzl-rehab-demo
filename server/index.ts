@@ -8,6 +8,7 @@ import { kbRouter } from './routes/kb.ts'
 import { contentRouter } from './routes/content.ts'
 import { search } from './kb/search.ts'
 import { heartbeat } from './events/bus.ts'
+import { runSeed } from './seed/run.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -41,6 +42,17 @@ app.use(express.json())
 
 // 启动即建连并跑迁移：让「表缺失」这类问题在启动时暴露，而不是等第一个请求
 getDb()
+
+// 空库自动灌种子：部署环境没人手动跑 pnpm seed，不灌的话连登录账号都没有。
+// 只在 users 表为空（全新库）时执行，已有数据的库绝不重灌。
+{
+  const db = getDb()
+  const userCount = (db.prepare('SELECT count(*) c FROM users').get() as any).c
+  if (userCount === 0) {
+    console.log('[db] 空库，自动灌入种子数据')
+    runSeed()
+  }
+}
 
 app.use('/api/auth', authRouter)
 app.use('/api/patients', patientsRouter)
