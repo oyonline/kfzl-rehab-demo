@@ -28,4 +28,4 @@ dist-ssr
 public/videos/
 
 # SQLite 数据库：运行时产物，不进仓（用 pnpm seed 重建）
-data/
+/data/
