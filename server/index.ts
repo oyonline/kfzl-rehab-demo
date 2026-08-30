@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { getDb } from './db/index.ts'
 import { authRouter } from './routes/auth.ts'
+import { patientsRouter } from './routes/patients.ts'
+import { heartbeat } from './events/bus.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -38,6 +40,10 @@ app.use(express.json())
 getDb()
 
 app.use('/api/auth', authRouter)
+app.use('/api/patients', patientsRouter)
+
+// SSE 心跳：代理与浏览器都会掐掉长时间无数据的连接，掐掉后前端不会自知
+setInterval(heartbeat, 25_000).unref()
 
 app.get('/api/ai-status', (_req, res) => {
   res.json({ enabled: AI_ENABLED, timeoutMs: LLM_TIMEOUT_MS })

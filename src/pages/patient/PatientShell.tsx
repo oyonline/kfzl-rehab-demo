@@ -3,7 +3,7 @@ import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { currentSession, signOut } from '../../auth/auth'
 import { patient } from '../../data/seed'
 import { CARE_ALERTS } from '../../data/guidance'
-import { useDemoState } from '../../store/store'
+import { useDemoLoaded, useDemoState } from '../../store/store'
 import { IconAlert, IconCaret, IconFile, IconLeaf } from '../../components/Icons'
 import { ReminderBell } from '../../components/ReminderBell'
 import { ReminderBanner } from '../../components/ReminderBanner'
@@ -31,6 +31,7 @@ export function PatientShell() {
   const session = currentSession()
   const [profileOpen, setProfileOpen] = useState(false)
   const state = useDemoState()
+  const loaded = useDemoLoaded()
   const unread = state.guidances.filter((g) => !g.readByFamily).length
 
   // 只取家属可见、且给了短形式的量表；顺序按 TILE_ORDER，不依赖 seed 的书写顺序
@@ -39,6 +40,13 @@ export function PatientShell() {
     .filter((a): a is NonNullable<typeof a> => Boolean(a?.tile && a.visibleToFamily))
     .map((a) => a.tile!)
   const assessDate = patient.assessments.find((a) => a.tile)?.date ?? ''
+
+  // 首屏数据来自服务端，未到之前先不渲染 —— 否则会闪一下"全部未完成"
+
+  // 再跳成真实值，康复师看到的第一眼是错的。
+
+  if (!loaded) return <div className="app" style={{ minHeight: '100vh' }} />
+
 
   return (
     <div className="app" data-skin="warm">

@@ -1,7 +1,7 @@
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { currentSession, signOut } from '../../auth/auth'
 import { therapist } from '../../data/seed'
-import { pendingEscalations, useDemoState } from '../../store/store'
+import { pendingEscalations, useDemoLoaded, useDemoState } from '../../store/store'
 import { IconLeaf } from '../../components/Icons'
 import { PatientListView } from './PatientListView'
 import { PatientDetail } from './PatientDetail'
@@ -18,12 +18,20 @@ export function TherapistShell() {
   const nav = useNavigate()
   const session = currentSession()
   const state = useDemoState()
+  const loaded = useDemoLoaded()
   const pending = pendingEscalations(state).length
 
   const NAV = [
     { to: '/therapist', label: '在管患者', end: true },
     { to: '/therapist/inbox', label: '待处理', badge: pending },
   ]
+
+  // 首屏数据来自服务端，未到之前先不渲染 —— 否则会闪一下"全部未完成"
+
+  // 再跳成真实值，康复师看到的第一眼是错的。
+
+  if (!loaded) return <div className="app" style={{ minHeight: '100vh' }} />
+
 
   return (
     <div className="app" data-skin="cool">
