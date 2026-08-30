@@ -46,6 +46,9 @@ scripts/
 
 ## 路由结构
 
+根路径：
+- `/` 角色选择页（`src/pages/LandingPage.tsx`）—— 两个入口各一张卡片；未知路径也兜底到这里
+
 家属端：
 - `/patient` 今日、`/patient/chat` 康复咨询、`/patient/calendar` 打卡日历、`/patient/guidance` 饮食与健康
 - `/patient/videos` 训练视频列表 → `/patient/videos/:id` 详情

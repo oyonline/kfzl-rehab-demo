@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { RequireAuth } from './components/RequireAuth'
 import { PatientShell } from './pages/patient/PatientShell'
@@ -14,7 +15,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/patient" replace />} />
+        {/* 根路径给角色选择页。此前直接跳 /patient，等于把家属端当成整站门面，
+            康复师端在线上没有入口，只能手输地址。 */}
+        <Route path="/" element={<LandingPage />} />
 
         <Route
           path="/patient/login"
@@ -60,7 +63,7 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/patient" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )

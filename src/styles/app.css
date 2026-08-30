@@ -956,3 +956,80 @@
   font-size: var(--t-sm); color: var(--ink-3);
 }
 .rmtoast-ok:hover { background: var(--surface-2); color: var(--ink); }
+
+/* ---------- 落地页：根路径的角色选择 ---------- */
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* 窄屏改单列：现场若用平板或投屏比例异常，两列会挤成一团 */
+@media (max-width: 720px) {
+  .landing-grid { grid-template-columns: 1fr; }
+}
+
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 10px;
+  padding: 28px 26px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+
+.landing-card:hover,
+.landing-card:focus-visible {
+  border-color: var(--green-300);
+  box-shadow: 0 2px 14px rgba(20, 32, 30, .07);
+  transform: translateY(-2px);
+}
+
+.landing-ico {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--green-50);
+  color: var(--green-700);
+  margin-bottom: 4px;
+}
+
+.landing-title { font-size: var(--t-lg); font-weight: 640; }
+.landing-desc  { font-size: var(--t-sm); color: var(--ink-3); line-height: 1.65; }
+
+.landing-points {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 4px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-xs);
+  color: var(--ink-4);
+}
+.landing-points li { padding-left: 14px; position: relative; }
+.landing-points li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 7px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green-300);
+}
+
+.landing-go {
+  margin-top: auto;
+  padding-top: 10px;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--green-700);
+}
