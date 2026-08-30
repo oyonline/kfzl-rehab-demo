@@ -26,3 +26,6 @@ dist-ssr
 
 # 视频素材：约 390MB，不进仓库，随压缩包另发（见 docs/现场部署.md）
 public/videos/
+
+# SQLite 数据库：运行时产物，不进仓（用 pnpm seed 重建）
+data/
