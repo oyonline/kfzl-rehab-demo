@@ -232,6 +232,9 @@ export function ChatView() {
   const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null; hits: KbHit[]; disclaimers: string[] } | null>(null)
   const [streamingId, setStreamingId] = useState<string | null>(null)
   const [streamingText, setStreamingText] = useState('')
+  // 模型首字返回前界面必须有东西：依据动画走完就消失，而首 token 要等数秒，
+  // 中间全空白——等模型回复期间显示思考占位，首个字到达后切打字机
+  const [waitingLLM, setWaitingLLM] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const messages = state.messages
 
@@ -254,6 +257,7 @@ export function ChatView() {
     try {
       // 前端也必须自带上限：服务端 503（本机未启用 AI）是瞬时的，
       // 但网络层卡住时只有这里能把它掐掉，否则家属端就一直转圈。
+      setWaitingLLM(true)
       const ac = new AbortController()
       const abortTimer = setTimeout(() => ac.abort(), LLM_ABORT_MS)
 
@@ -293,6 +297,7 @@ export function ChatView() {
           try {
             const parsed = JSON.parse(data)
             if (parsed.content) {
+              setWaitingLLM(false)
               fullText += parsed.content
               setStreamingText(fullText)
             }
@@ -330,6 +335,7 @@ export function ChatView() {
       // 降级到预设答案；自由提问没有预设时走 FALLBACK_ANSWER（v0.1 §12：不硬答，转人工）
       const fallback = presetQ ?? FALLBACK_ANSWER
       setStreamingText('')
+      setWaitingLLM(false)
       // 本机无模型时走这里。检索仍然有效 —— 它不依赖模型，
       // 所以「依据」照样是真实命中的文档，断网也成立。
       const id = addMessage({
@@ -383,7 +389,8 @@ export function ChatView() {
     setTrace(null)
   }, [trace, messages])
 
-  const busy = trace !== null || streamingId !== null || streamingText !== ''
+  // waitingLLM 也要算忙：等模型首字的空窗期不锁住的话，用户能连点预设/重复提问
+  const busy = trace !== null || waitingLLM || streamingId !== null || streamingText !== ''
   const unasked = busy ? [] : PRESET_QA.filter((q) => !messages.some((m) => m.role === 'family' && m.text === q.question))
 
   return (
@@ -475,6 +482,19 @@ export function ChatView() {
             </div>
           )
         })}
+        {waitingLLM && !streamingText && (
+          <div className="bub-row" data-me={false}>
+            <span className="bub-av"><IconChat size={17} /></span>
+            <div className="bub bub-ai">
+              <div className="bub-who">
+                <span className="bub-tag">AI</span>智能助手 · 依据她的康复档案作答
+              </div>
+              <div className="thinking-dots" role="status" aria-label="正在结合资料思考">
+                <span /><span /><span />
+              </div>
+            </div>
+          </div>
+        )}
         {streamingText && (
           <div className="bub-row" data-me={false}>
             <span className="bub-av"><IconChat size={17} /></span>
