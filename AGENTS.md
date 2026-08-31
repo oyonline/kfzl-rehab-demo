@@ -100,13 +100,13 @@ scripts/
 **开发需要同时起两个进程**：
 
 ```
-PORT=5099 pnpm server     # Express，提供 /api
-pnpm dev                  # Vite，5173
+pnpm server     # Express，提供 /api，默认 5099
+pnpm dev        # Vite，5173，把 /api 代理到 5099
 ```
 
-⚠️ **`PORT=5099` 不能省。** Vite 代理默认打到 `127.0.0.1:5099`（`vite.config.ts`），
-而 `server/index.ts` 的 `PORT` 默认值是 `5000` —— 两个默认值对不上，
-直接 `pnpm server` 会让所有接口请求连不上。选 5099 是因为 macOS AirPlay 占着 5000。
+两个默认值已对齐（2026-08-31 修）。此前 server 默认 5000、Vite 代理默认 5099，
+对不上，直接 `pnpm server` 会让所有接口请求连不上。不用 5000 是因为 macOS
+AirPlay 占着它，且 `.preview` 把 5000 分给了 Vite。
 
 - 预览：`scripts/dev-build.sh` + `scripts/dev-run.sh`（端口从 `.preview` 读取，`expose_port = 5000`）
 - 部署：`scripts/build.sh` + `scripts/run.sh`（Vite build → Express 托管，单进程同源）
@@ -127,7 +127,8 @@ pnpm dev                  # Vite，5173
 
 ## 常见问题和预防
 
-- `pnpm server` 不带 `PORT=5099` → 前端所有接口 502/连接被拒
+- 改动 `server/index.ts` 或 `vite.config.ts` 的默认端口时**两侧必须同改**，
+  否则开发环境所有接口请求连接被拒（2026-08-31 前就是这个状态）
 - 登录态改用 Cookie → 两端互顶会话
 - 跨域名部署 → `/api` 相对路径打空
 - 视频未到位时不做假播放 → `videos[].src` 为空时显示海报 + 分步图文；文件缺失走 `onError` 兜底

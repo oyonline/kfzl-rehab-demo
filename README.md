@@ -26,16 +26,18 @@ pnpm install
 开发需要**同时起两个进程**：Vite 提供前端，Express 提供 `/api`。
 
 ```bash
-PORT=5099 pnpm server
+pnpm server
 ```
 
 ```bash
 pnpm dev
 ```
 
-> ⚠️ **`PORT=5099` 不能省。** Vite 的 `/api` 代理默认打到 `127.0.0.1:5099`（`vite.config.ts`），
-> 而 `server/index.ts` 的 `PORT` 默认值是 `5000`。两个默认值对不上，直接 `pnpm server` 会让所有接口请求连不上。
-> 选 5099 而非 5000 是因为 macOS 的 AirPlay 接收器占着 5000。
+前端在 5173，接口在 5099，Vite 把 `/api` 代理过去。两个默认值已对齐，
+不需要额外设环境变量。
+
+> 不用 5000 的原因：macOS 的 AirPlay 接收器占着它，且 `.preview` 已把 5000 分给 Vite。
+> 部署是另一回事 —— `scripts/run.sh` 显式用 5000，单进程同时托管构建产物与 `/api`。
 
 首次启动时数据库会自动建表、跑迁移、灌种子数据 —— 不需要手动执行 `pnpm seed`。
 只有 `users` 表为空（全新库）才会灌，已有数据的库不会被重灌。
@@ -313,6 +315,15 @@ bash scripts/verify-clean-clone.sh --no-videos
 去掉 `--no-videos` 则连 17 个视频素材一并校验（慢，约 350 MB）。
 
 CI（`.github/workflows/ci.yml`）每次推送做同样的事。
+
+## 文档
+
+| 文档 | 内容 |
+|---|---|
+| [docs/交付说明.md](docs/交付说明.md) | **交付范围、项目时间线、工程状态、尚未解决的事项** |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 子系统、数据流、权限模型、数据模型、接口 |
+| [docs/adr/](docs/adr/) | 16 条架构决策记录 |
+| [docs/现场部署.md](docs/现场部署.md) | 演示电脑的安装与自检步骤 |
 
 ## 为什么这样设计
 
