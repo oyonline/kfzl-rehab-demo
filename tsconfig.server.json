@@ -18,5 +18,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["server"]
+  "include": ["server", "tests", "probe-models.ts", "vitest.config.ts"]
 }

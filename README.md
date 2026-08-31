@@ -267,7 +267,52 @@ src/pages/therapist/   康复师端
 | 线上知识库 | `kb_documents` 线上为空表，检索只在本地成立 |
 | 真实患者数据 | 接入真实患者数据、接生产医疗系统**均未授权** |
 | 视频文字说明 | 甲方需求书写明提供，尚未交付；`videoSteps.ts` 无甲方内容可替换 |
-| 自动化测试 | **无测试、无 CI**，当前依赖人工验证 |
+| 端到端测试 | 只有服务端冒烟测试，前端组件与页面交互仍靠人工验证 |
+
+## 验证
+
+```bash
+pnpm verify
+```
+
+等于 `typecheck` + `lint` + `test` 三步。单独跑：
+
+| 命令 | 内容 |
+|---|---|
+| `pnpm typecheck` | `tsc -b --noEmit`，覆盖 `src` / `server` / `tests` / 根目录脚本 |
+| `pnpm lint` | oxlint |
+| `pnpm test` | vitest 冒烟测试，32 条，约 0.4 秒 |
+| `pnpm test:watch` | 监听模式 |
+
+### 冒烟测试测什么
+
+**不追覆盖率，只钉住「破了就出事」的不变量** —— 这几条一旦破，演示当场翻车，
+而人工点页面不一定点得到：
+
+| 文件 | 守住的东西 |
+|---|---|
+| `tests/migrations.test.ts` | 迁移可重入、外键已开、28 张表建全 |
+| `tests/auth.test.ts` | 密码哈希与令牌可信；篡改令牌返回 null 而非放行 |
+| `tests/access.test.ts` | **行级权限**：未授权用户看不到任何患者，授权是逐患者而非按角色 |
+| `tests/review.test.ts` | **驳回即停止下发**（ADR 0014 的核心承诺）；审核动作写审计日志 |
+| `tests/kb-search.test.ts` | 检索可用；**被驳回与已停用的语料不进结果** |
+
+测试各自使用临时数据库（`tests/setup.ts` 分配），**绝不碰开发库 `data/app.db`**。
+
+### 交付前：干净克隆自检
+
+```bash
+bash scripts/verify-clean-clone.sh --no-videos
+```
+
+从远端重新克隆一棵干净的树，跑完整验证链。
+
+**为什么必须这么做**：2026-08-30 出过一次事故 —— 本地 `tsc` / `build` / 浏览器
+实测全绿，推上去却整个构建失败，根因是 `.gitignore` 少写前导斜杠把 `src/data/`
+一并吞掉、源码静默漏推。本地工作区里那个文件在，所以**本地永远照不出来**。
+去掉 `--no-videos` 则连 17 个视频素材一并校验（慢，约 350 MB）。
+
+CI（`.github/workflows/ci.yml`）每次推送做同样的事。
 
 ## 为什么这样设计
 

@@ -29,8 +29,10 @@
 **工程**
 
 - Lint：oxlint
-- 包管理器：pnpm
-- **无测试、无 CI**（已知缺口）
+- 包管理器：pnpm（`packageManager` 已锁 10.30.3）
+- 测试：vitest，服务端冒烟测试 32 条（`tests/`），临时数据库隔离
+- CI：GitHub Actions，每次推送在干净克隆上跑 typecheck / lint / test / build
+- 一键验证：`pnpm verify`
 
 ## 目录结构
 
@@ -132,7 +134,10 @@ pnpm dev                  # Vite，5173
 - 视频素材必须进 Git 仓库（`public/videos/`）：部署从仓库构建，排除会导致线上永远缺视频；现场断网可用，不能用外部对象存储/CDN 当视频源
 - 写运行时目录的 `.gitignore` 条目**必须带前导斜杠**（`/data/` 而非 `data/`）：写成 `data/` 会连 `src/data/` 一起吞掉，源码静默漏推、线上构建全线失败（2026-08-30 实测）
 - **服务端不得在模块加载阶段写盘**：密钥与数据库路径须支持环境变量覆盖并回退可写目录，否则只读沙箱直接启动失败
-- 交付前对**推上去的那棵树**另做干净克隆构建：本地 `tsc`/`build`/浏览器全绿照不出漏推
+- 交付前对**推上去的那棵树**另做干净克隆构建：本地 `tsc`/`build`/浏览器全绿照不出漏推。
+  已脚本化：`bash scripts/verify-clean-clone.sh --no-videos`
+- **新增根目录脚本要记得进 `tsconfig.server.json` 的 include**：否则 `tsc` 不检查它。
+  `probe-models.ts` 就因此带着一个类型错误进了仓，直到 tests 接入 typecheck 才暴露
 - **平台模型快照会停运**：原默认 `doubao-seed-1-8-251228` 被平台下线，导致 AI 咨询整体故障
   （2026-08-30 发现，08-31 修复）。模型名必须用实测通过的快照 ID —— 平台文档列出的模型
   也可能 not found（`glm-5` / `minimax-m2.x` / `qwen-3.5` 实测均不可用），**以探测为准**。

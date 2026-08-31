@@ -1,0 +1,67 @@
+# 持续集成 —— 每次推送都在一棵干净克隆的树上验证一遍。
+#
+# 这条流水线存在的直接理由是 2026-08-30 的一次事故：
+# 本地 tsc / build / 浏览器实测全绿，推上去却整个构建失败 ——
+# 原因是 .gitignore 写成 `data/`（少了前导斜杠）把 src/data/ 一并吞掉，
+# 源码静默漏推。本地永远照不出这种问题，只有干净克隆能。
+#
+# 因此这里刻意**不缓存构建产物**，只缓存依赖。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 检出（排除视频素材）
+        uses: actions/checkout@v4
+        with:
+          # public/videos/ 是 313 MB 的演示素材（见 ADR 0013），
+          # 与类型、测试、构建正确性无关。排除后 CI 从约 350 MB 降到几 MB。
+          # 构建仍然成立 —— Vite 只是少拷贝一批静态文件。
+          sparse-checkout: |
+            /*
+            !public/videos
+          sparse-checkout-cone-mode: false
+
+      - name: 确认源码树完整（防 gitignore 误排除）
+        run: |
+          test -d src/data || { echo "::error::src/data 缺失 —— 检查 .gitignore 是否误排除"; exit 1; }
+          test -f src/data/context.tsx || { echo "::error::src/data/context.tsx 缺失"; exit 1; }
+          test -d server/db/migrations || { echo "::error::迁移目录缺失"; exit 1; }
+          echo "源码树完整"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: 冒烟测试
+        run: pnpm test
+
+      - name: 构建
+        run: pnpm build
+
+      - name: 确认构建产物可用
+        run: |
+          test -f dist/index.html || { echo "::error::构建产物缺 index.html"; exit 1; }
+          echo "构建产物正常"

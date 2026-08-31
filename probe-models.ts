@@ -12,7 +12,7 @@ const CANDIDATES = [
   'qwen-3-5-plus-260215',
 ]
 
-const MSG = [{ role: 'user', content: '回复"OK"两个字即可' }]
+const MSG = [{ role: 'user' as const, content: '回复"OK"两个字即可' }]
 
 async function probe(model: string): Promise<string> {
   const client = new LLMClient(new Config({ timeout: 8000 }))
