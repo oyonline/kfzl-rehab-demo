@@ -70,7 +70,7 @@ export function LandingPage() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 26, fontSize: 'var(--t-xs)', color: 'var(--ink-4)' }}>
-          案例人物与数据均为合成数据，不对应任何真实个人
+          页面人物与数据均为演示示例，不作为诊疗依据
         </p>
       </div>
     </div>

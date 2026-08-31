@@ -27,7 +27,7 @@ export type DataOrigin =
   | 'placeholder'          // 占位素材，未到位，禁止冒充自有内容
 
 export const ORIGIN_LABEL: Record<DataOrigin, string> = {
-  synthetic: '演示病例｜身份与健康数据为合成数据',
+  synthetic: '演示病例｜内容为演示示例，仅供参考',
   therapist_confirmed: '基于康复师确认计划',
   team_reviewed: '团队审核知识库',
   ai_generated: 'AI 生成摘要',
