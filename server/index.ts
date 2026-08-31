@@ -39,6 +39,19 @@ const AI_ENABLED = (() => {
 /** SDK 默认超时时长未知（扣子侧自陈未验证），因此必须显式给死 */
 const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS ?? 15000)
 
+/**
+ * 模型白名单 —— 2026-08-30 逐个实测通过（probe-models.ts）。
+ * 原默认 doubao-seed-1-8-251228 已被平台停运，AI 咨询因此整体故障；
+ * 文档里列的 glm-5 / minimax-m2.x / qwen-3.5 实测 not found，以实测为准。
+ */
+const LLM_MODELS = [
+  'doubao-seed-2-0-pro-260215',
+  'doubao-seed-2-0-lite-260215',
+  'doubao-seed-2-0-mini-260215',
+  'glm-4-7-251222',
+]
+const DEFAULT_LLM_MODEL = 'doubao-seed-2-0-lite-260215'
+
 app.use(express.json())
 
 // 启动即建连并跑迁移：让「表缺失」这类问题在启动时暴露，而不是等第一个请求
@@ -122,6 +135,13 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'messages 必须包含至少一条 user 消息' })
     }
 
+    // 前端只传友好选项，但 model 字段仍不可信任：不在白名单一律回退默认
+    const requested = typeof model === 'string' ? model : ''
+    const resolvedModel = LLM_MODELS.includes(requested) ? requested : DEFAULT_LLM_MODEL
+    if (requested && requested !== resolvedModel) {
+      console.warn(`[chat] 非白名单模型 ${requested}，回退 ${resolvedModel}`)
+    }
+
     /**
      * 检索增强（P5）。此前自由提问是把患者档案拼进提示词直接问模型，
      * 甲方那 57 篇资料一篇都没被用上。现在先检索、再让模型照着资料答，
@@ -168,7 +188,7 @@ app.post('/api/chat', async (req, res) => {
     const client = new LLMClient(config, customHeaders)
 
     const stream = client.stream(augmented, {
-      model: model || 'doubao-seed-1-8-251228',
+      model: resolvedModel,
       temperature: 0.7,
     })
 

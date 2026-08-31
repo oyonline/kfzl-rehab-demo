@@ -56,6 +56,14 @@
 .card-title { font-size: var(--t-lg); font-weight: 640; letter-spacing: .01em; }
 .card-note { font-size: var(--t-sm); color: var(--ink-3); }
 
+/* 模型选择：演示用途，视觉与 card-note 同级保持低调，不抢问答主线 */
+.model-pick {
+  font: inherit; font-size: var(--t-sm); color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 3px 8px; cursor: pointer;
+}
+.model-pick:focus-visible { outline: 2px solid var(--green-700); outline-offset: 1px; }
+
 .eyebrow {
   font-size: var(--t-xs); font-weight: 600; letter-spacing: .16em;
   color: var(--ink-3); text-transform: uppercase; margin-bottom: 6px;

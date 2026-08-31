@@ -144,6 +144,14 @@ const hitsToBasis = (hits: KbHit[]) =>
 /** 前端等待上限。比服务端的 15s 略长，让服务端的错误先浮出来 */
 const LLM_ABORT_MS = 20000
 
+/** 模型选项 —— 与服务端 LLM_MODELS 白名单一一对应，均经 probe-models.ts 实测 */
+const LLM_OPTIONS = [
+  { value: 'doubao-seed-2-0-lite-260215', label: '标准 · 豆包 2.0 Lite' },
+  { value: 'doubao-seed-2-0-pro-260215', label: '旗舰 · 豆包 2.0 Pro' },
+  { value: 'doubao-seed-2-0-mini-260215', label: '极速 · 豆包 2.0 Mini' },
+  { value: 'glm-4-7-251222', label: '备用 · GLM-4.7' },
+]
+
 /** 构建系统提示词，注入患者档案上下文 */
 /** 双源回答的分段标记 —— 提示词里要求模型原样输出，前端据此切成两块 */
 export const SRC_EXTERNAL = '【网络参考信息】'
@@ -220,6 +228,7 @@ export function ChatView() {
   const promptCtx: PromptCtx = { patient, taskDefs, therapist, planConfirmedOn }
   const state = useDemoState()
   const [draft, setDraft] = useState('')
+  const [model, setModel] = useState(LLM_OPTIONS[0].value)
   const [trace, setTrace] = useState<{ steps: TraceStep[]; qa: PresetQA | null; hits: KbHit[]; disclaimers: string[] } | null>(null)
   const [streamingId, setStreamingId] = useState<string | null>(null)
   const [streamingText, setStreamingText] = useState('')
@@ -253,7 +262,7 @@ export function ChatView() {
         response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: apiMessages }),
+          body: JSON.stringify({ messages: apiMessages, model }),
           signal: ac.signal,
         })
       } finally {
@@ -384,7 +393,17 @@ export function ChatView() {
           <div className="eyebrow">康复咨询</div>
           <h2 className="card-title">结合 {patient.name} 的档案作答</h2>
         </div>
-        <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+          <select
+            className="model-pick"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            aria-label="回答模型"
+          >
+            {LLM_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
+        </div>
       </div>
 
       <div className="chat-body">

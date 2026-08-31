@@ -43,6 +43,7 @@ scripts/
 - **数据层**：`src/data/`（types.ts 为冻结契约，改动须两端同步）
 - **状态层**：`src/store/store.ts`（localStorage 跨标签页同步）
 - **认证层**：`src/auth/auth.ts`（sessionStorage 登录态）
+- **AI 咨询**：`server/index.ts` `/api/chat`（RAG：先检索知识库再作答）；模型白名单 `LLM_MODELS` + 默认 `DEFAULT_LLM_MODEL`（均为实测可用，验证脚本 `probe-models.ts`）；前端模型选择器在 `src/pages/patient/ChatView.tsx`（`LLM_OPTIONS` 与白名单一一对应，改动须两侧同步）
 
 ## 路由结构
 
@@ -83,3 +84,5 @@ scripts/
 - 跨域名部署会导致 localStorage 不互通 → 必须同源
 - 视频未到位时不做假播放 → `videos[].src` 为空时显示海报 + 分步图文
 - 视频素材必须进 Git 仓库（public/videos/）：部署从仓库构建，gitignore 排除会导致线上缺视频且拿 HTML 冒充 404；且现场演示断网可用，不能用外部对象存储/CDN 当视频源
+- **平台模型快照会停运**：原默认 `doubao-seed-1-8-251228` 被平台下线导致 AI 咨询整体故障（2026-08-30 发现）。模型名必须用实测通过的快照 ID（`probe-models.ts` 逐个探测），平台文档列的模型也可能 not found，以实测为准；演示前建议跑一遍探测脚本确认模型仍在线
+- 预览链路 = Vite（5000，`.preview` 端口）+ Express API（5099，`vite.config.ts` proxy 默认目标），起后端用 `PORT=5099 pnpm exec tsx server/index.ts`，不要占 5000
