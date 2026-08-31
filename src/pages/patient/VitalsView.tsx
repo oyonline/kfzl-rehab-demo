@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {BP_SAFE, isBpAbnormal} from '../../data/seed'
 import { usePatientData } from '../../data/context'
@@ -22,6 +22,8 @@ export function VitalsView() {
   const [sys, setSys] = useState('')
   const [dia, setDia] = useState('')
   const [err, setErr] = useState('')
+  const [justSaved, setJustSaved] = useState(false)
+  const savedTimer = useRef<number | undefined>(undefined)
 
   const records = [...state.vitals].sort((a, b) => a.at.localeCompare(b.at))
   const latest = records[records.length - 1]
@@ -46,6 +48,9 @@ export function VitalsView() {
     addVital(s, d)
     setSys('')
     setDia('')
+    window.clearTimeout(savedTimer.current)
+    setJustSaved(true)
+    savedTimer.current = window.setTimeout(() => setJustSaved(false), 1600)
   }
 
   return (
@@ -70,7 +75,7 @@ export function VitalsView() {
             <input className="input num" inputMode="numeric" value={dia} onChange={(e) => setDia(e.target.value.replace(/\D/g, ''))} placeholder="74" />
           </label>
           <span className="bp-unit">mmHg</span>
-          <button className="btn btn-lg" onClick={submit}><IconCheck size={13} /> 记录</button>
+          <button className="btn btn-lg" onClick={submit} data-done={justSaved}><IconCheck size={13} /> {justSaved ? '已记录' : '记录'}</button>
         </div>
         {err && <p className="card-note" style={{ color: 'var(--miss)', marginTop: 10 }}>{err}</p>}
 
@@ -112,10 +117,10 @@ export function VitalsView() {
       <section className="card card-pad">
         <div className="eyebrow">记录明细</div>
         <div className="bp-rows">
-          {[...records].reverse().slice(0, 10).map((r) => {
+          {[...records].reverse().slice(0, 10).map((r, i) => {
             const bad = isBpAbnormal(r)
             return (
-              <div className="bp-row" key={r.id} data-bad={bad}>
+              <div className="bp-row" key={r.id} data-bad={bad} data-fresh={justSaved && i === 0}>
                 <span className="bp-when num">{Number(r.date.slice(5, 7))}/{Number(r.date.slice(8, 10))} {r.time}</span>
                 <span className="bp-val num">{r.systolic} / {r.diastolic}</span>
                 <span className="bp-by">{r.by}</span>

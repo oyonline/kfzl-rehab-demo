@@ -880,6 +880,14 @@
 .bp-row[data-bad='true'] .bp-val { color: var(--miss); }
 .bp-by { font-size: var(--t-xs); color: var(--ink-4); }
 
+/* 记录成功反馈：按钮短暂确认态 + 新记录行闪现，点完有「记上了」的感觉 */
+.btn[data-done='true'] { background: var(--ok-bg); color: var(--ok); }
+.bp-row[data-fresh='true'] { animation: bpRowFlash 1.6s ease-out; }
+@keyframes bpRowFlash {
+  0% { background: var(--green-100); }
+  100% { background: transparent; }
+}
+
 /* 页签上的异常红点：数量无意义（超标就是超标），所以不显示数字 */
 .nav-dot {
   display: inline-block; width: 7px; height: 7px; border-radius: 50%;
