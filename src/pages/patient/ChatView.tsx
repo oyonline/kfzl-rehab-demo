@@ -393,17 +393,7 @@ export function ChatView() {
           <div className="eyebrow">康复咨询</div>
           <h2 className="card-title">结合 {patient.name} 的档案作答</h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <select
-            className="model-pick"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            aria-label="回答模型"
-          >
-            {LLM_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
-        </div>
+        <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
       </div>
 
       <div className="chat-body">
@@ -550,6 +540,19 @@ export function ChatView() {
           >
             <IconSend size={14} /> 发送
           </button>
+        </div>
+
+        {/* 模型切换放输入区旁 —— 参考主流 AI 界面，顶栏只留主线信息 */}
+        <div className="composer-tools">
+          <select
+            className="model-pick"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            aria-label="回答模型"
+          >
+            {LLM_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
         </div>
       </div>
     </section>
