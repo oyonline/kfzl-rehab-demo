@@ -14,12 +14,21 @@ import { requireAuth, requireRole, requirePatientAccess, visiblePatientIds } fro
 import { publish, addClient } from '../events/bus.ts'
 import { toCheckIn, toVital, toUpload, toMessage, toGuidance, toEscalation,
          toPatient, toTaskDef, toReminder } from './mappers.ts'
-import { buildHistory, buildVitals, isBpAbnormal, toISODate } from '../../src/data/seed.ts'
+import { buildHistory, buildVitals, isBpAbnormal } from '../../src/data/seed.ts'
 
 export const patientsRouter = Router()
 
 const now = () => new Date().toISOString()
 const J = (v: unknown) => JSON.stringify(v ?? [])
+
+/**
+ * 写入用「今天/时分」一律以北京时间为准（UTC+8）：演示用户在国内，部署容器
+ * 默认 UTC，直接取容器本地时区会差 8 小时（线上实测：血压/打卡/上传全部中招）。
+ */
+function beijingNow(t = new Date()) {
+  const d = new Date(t.getTime() + 8 * 3600e3)
+  return { date: d.toISOString().slice(0, 10), time: d.toISOString().slice(11, 16) }
+}
 
 /**
  * Express 5 把路由参数类型化为 string | string[]（同名参数可重复出现）。
@@ -37,7 +46,7 @@ patientsRouter.get('/', requireAuth, (req, res) => {
   const ids = visiblePatientIds(req.user!.sub, req.user!.role)
   if (ids.length === 0) return res.json({ patients: [] })
 
-  const today = toISODate(new Date())
+  const today = beijingNow().date
   const ph = ids.map(() => '?').join(',')
   // 工作台要的逐患者标记一次算齐：拆成前端逐个请求，7 位患者就是 7 轮往返。
   const rows = db.prepare(`
@@ -229,7 +238,7 @@ patientsRouter.put('/:id/checkins', requireAuth, requirePatientAccess(), (req, r
   if (typeof taskId !== 'string' || typeof status !== 'string') {
     return res.status(400).json({ error: 'bad_request', message: '缺少 taskId 或 status' })
   }
-  const d = typeof date === 'string' ? date : toISODate(new Date())
+  const d = typeof date === 'string' ? date : beijingNow().date
 
   const task = db.prepare('SELECT id FROM task_defs WHERE id = ? AND patient_id = ?').get(taskId, patientId)
   if (!task) return res.status(404).json({ error: 'task_not_found', message: '该患者没有此任务' })
@@ -260,10 +269,10 @@ patientsRouter.post('/:id/vitals', requireAuth, requirePatientAccess(), (req, re
   }
   const t = new Date()
   const id = typeof clientId === 'string' && clientId ? clientId : `vital-${t.getTime()}`
-  const time = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`
+  const { date: bDate, time } = beijingNow(t)
   db.prepare(`INSERT OR REPLACE INTO vitals
     (id,patient_id,date,time,systolic,diastolic,by,at,recorded_by) VALUES (?,?,?,?,?,?,?,?,?)`)
-    .run(id, patientId, toISODate(t), time, systolic, diastolic, by ?? '家属', t.toISOString(), req.user!.sub)
+    .run(id, patientId, bDate, time, systolic, diastolic, by ?? '家属', t.toISOString(), req.user!.sub)
   publish(patientId, 'vital')
   res.json(toVital(db.prepare('SELECT * FROM vitals WHERE id = ?').get(id)))
 })
@@ -277,7 +286,7 @@ patientsRouter.post('/:id/uploads', requireAuth, requirePatientAccess(), (req, r
     return res.status(400).json({ error: 'bad_request', message: '缺少 taskId 或 filename' })
   }
   const t = new Date()
-  const d = toISODate(t)
+  const d = beijingNow(t).date
   const id = typeof clientId === 'string' && clientId ? clientId : `up-${t.getTime()}`
 
   db.transaction(() => {
