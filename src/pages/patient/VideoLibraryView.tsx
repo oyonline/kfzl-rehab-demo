@@ -8,6 +8,12 @@ import { IconPlay } from '../../components/Icons'
  * 17 个视频全部是甲方拍摄的真实素材，因此不做「制作中」占位卡 ——
  * 列表里出现的每一个都点得开、播得了。
  *
+ * 缩略图：每个视频的首帧已预抽成 `public/posters/<id>.jpg`（2026-09-03
+ * 用户裁决方案 B）。用 <img> 而非 <video preload="metadata"> 是为了演示
+ * 确定性 —— 打开列表即显示，无逐卡加载的灰黑闪烁，投屏零翻车。
+ * 注意：**视频换版后须重新抽帧**（命令见 public/posters/README）。
+ * 图片缺失或加载失败时退回原深色占位块，不黑屏。
+ *
  * 按甲方交付的文件夹分六类展示；某一类没有视频时整块不渲染，
  * 不留空标题。
  */
@@ -43,6 +49,13 @@ export function VideoLibraryView() {
                 return (
                   <Link className="vcard" to={`/patient/videos/${v.id}`} key={v.id}>
                     <div className="vcard-thumb">
+                      <img
+                        className="vcard-poster"
+                        src={`/posters/${v.id}.jpg`}
+                        alt=""
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.remove() }}
+                      />
                       <span className="stage-play" style={{ width: 44, height: 44 }}><IconPlay size={16} /></span>
                     </div>
                     <div className="vcard-body">
