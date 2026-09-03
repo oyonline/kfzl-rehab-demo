@@ -24,8 +24,16 @@ import { IconBell, IconChevron, IconClose } from './Icons'
  *
  * 已关闭的 id 存 sessionStorage，按标签页隔离，与登录态同一套逻辑：
  * 并排两窗互不影响。
+ *
+ * 进场延迟：一进家属端就弹浮层会盖住首屏，体验像「被塞了一张纸」。
+ * 因此进入后先压 45 秒，让用户先看到页面，提醒随后再滑入。
+ * 45 秒内触发的更新提醒同样等窗口结束一起放行 —— 不会被丢掉，
+ * 只是延后；窗口过后新触发的（如录入超标血压）仍即时弹出。
  */
 const DISMISS_KEY = 'kfzl.rmbanner.dismissed'
+
+/** 进入家属端后，提醒浮层静默的时长（毫秒） */
+const ENTRY_DELAY_MS = 45_000
 
 export function ReminderBanner() {
   const { taskDefs } = usePatientData()
@@ -38,6 +46,14 @@ export function ReminderBanner() {
     }
   })
 
+  // 进场静默窗：到点后才开始允许浮层出现（组件挂在 PatientShell，
+  // 家属端内部换页不会重挂，所以 45 秒只数一次）
+  const [settled, setSettled] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), ENTRY_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [])
+
   // 先取最新一条，再看它是否已关闭 —— 顺序反过来就成了逐条翻页
   const newest = [...items].reverse().find((r) => r.sent && r.done !== true)
   const latest = newest && !dismissed.includes(newest.id) ? newest : undefined
@@ -47,7 +63,7 @@ export function ReminderBanner() {
   const [seq, setSeq] = useState(0)
   useEffect(() => { setSeq((n) => n + 1) }, [latest?.id])
 
-  if (!latest) return null
+  if (!latest || !settled) return null
 
   function dismiss() {
     if (!latest) return
