@@ -70,6 +70,56 @@ function RichText({ text }: { text: string }) {
   return <p><InlineRich text={text} /></p>
 }
 
+/**
+ * 将自然输入路由到经过审核的预设答案。
+ *
+ * 医疗问答不能靠编辑距离硬猜：一句话里只要多了几个症状，就可能被相似度算法
+ * 送进错误答案。这里先做文本规范化，再按可解释的意图词组合匹配；无法唯一判断
+ * 时返回 null，继续走知识库 + 模型（本地无模型则安全转人工）。
+ */
+function matchPresetQuestion(input: string, presets: PresetQA[]): PresetQA | null {
+  const normalize = (text: string) => text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\s，。！？、；：,.!?;:'"“”‘’（）()《》【】]+/g, '')
+
+  const text = normalize(input)
+  const exact = presets.find((q) => normalize(q.question) === text)
+  if (exact) return exact
+
+  const byId = (id: string) => presets.find((q) => q.id === id) ?? null
+  const hasAny = (words: string[]) => words.some((word) => text.includes(word))
+
+  const mentionsBloodPressure = hasAny(['血压', '高压', '低压'])
+  const mentionsMedicine = hasAny(['药', '药片', '剂量', '加量', '减量', '多吃一片'])
+  if (mentionsBloodPressure && mentionsMedicine) return byId('bp-high')
+
+  // 正在呛咳或噎住比饮食搭配优先，不能被“吃饭”二字路由到普通食谱。
+  if (hasAny(['呛咳', '呛到', '呛着', '噎住', '噎到'])) return byId('choking')
+
+  const asksAboutMeals = hasAny([
+    '三餐', '早餐', '午餐', '晚餐', '饮食', '食谱', '菜单',
+    '吃什么', '怎么吃', '吃点什么', '食物', '软食', '低盐',
+  ])
+  if (asksAboutMeals && !mentionsMedicine) return byId('meals')
+
+  const swallowingConcern = hasAny(['吞咽不好', '吞咽困难', '喝水呛', '饮水呛', '总是咳'])
+  if (swallowingConcern) return byId('choking')
+
+  const currentBloodPressureConcern = mentionsBloodPressure && hasAny([
+    '今天', '现在', '刚才', '刚刚', '量血压', '测血压', '比平时高', '升高', '高了',
+  ])
+  if (currentBloodPressureConcern) return byId('bp-high')
+
+  const trainingConcern = hasAny(['训练', '锻炼', '康复'])
+  if (trainingConcern && hasAny(['太累', '累了', '疲劳', '做不动', '没力气', '不想做'])) return byId('too-tired')
+
+  const legConcern = hasAny(['腿', '下肢', '大腿', '小腿']) && hasAny(['酸', '酸痛', '疼', '疼痛'])
+  if (trainingConcern && legConcern) return byId('sore-legs')
+
+  return null
+}
+
 /** 知识库命中项 —— 与 /api/kb/search 的返回对齐 */
 export interface KbHit {
   docId: string
@@ -390,8 +440,8 @@ export function ChatView() {
   }, [trace, messages])
 
   // 2026-09-03 用户裁决：移除预设问题快捷按钮，改为用户自由输入。
-  // 输入框发送时仍按原文精确匹配 PRESET_QA —— 手输预设问题照样出甲方原文答案，
-  // 兜底机制不动，删的只是「方便点击」的入口。
+  // 输入框发送时先做规范化精确匹配，再按可解释的意图词组合匹配 PRESET_QA；
+  // 无法唯一判断才走模型或转人工，删掉的仍只是「方便点击」的入口。
   // 注：远端 278a9f4 引入的 busy（含 waitingLLM）原本只为锁 unasked，
   // 按钮移除后无消费者，随 unasked 一并移除；等待空窗的思考占位由
   // waitingLLM 直接驱动，不受影响。
@@ -542,7 +592,7 @@ export function ChatView() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && draft.trim()) {
                 e.preventDefault()
-                void reply(PRESET_QA.find((q) => q.question === draft.trim()) ?? null, draft.trim())
+                void reply(matchPresetQuestion(draft, PRESET_QA), draft.trim())
                 setDraft('')
               }
             }}
@@ -551,7 +601,7 @@ export function ChatView() {
           <button
             className="btn btn-lg"
             disabled={!draft.trim()}
-            onClick={() => { void reply(PRESET_QA.find((q) => q.question === draft.trim()) ?? null, draft.trim()); setDraft('') }}
+            onClick={() => { void reply(matchPresetQuestion(draft, PRESET_QA), draft.trim()); setDraft('') }}
           >
             <IconSend size={14} /> 发送
           </button>
