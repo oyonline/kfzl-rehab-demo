@@ -68,7 +68,7 @@
 /* 输入区工具行：左模型选择、右提示 —— 参考主流 AI 界面，模型切换靠近输入位置且保持低调 */
 .composer-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
 
-/* ghost 风格：平时几乎隐形，hover 才浮出背景 */
+/* 模型选择器保持常态边界，避免与普通说明文字混在一起 */
 .model-pick {
   appearance: none;
   font: inherit; font-size: var(--t-sm); color: var(--ink-3);
@@ -76,12 +76,12 @@
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' stroke='%235c6764' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 9px center;
-  border: none; border-radius: 8px;
+  border: 1px solid var(--line-2); border-radius: 8px;
   padding: 5px 27px 5px 10px;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
-.model-pick:hover { background-color: var(--surface-2); color: var(--ink-2); }
+.model-pick:hover { background-color: var(--surface-2); border-color: var(--green-700); color: var(--ink-2); }
 .model-pick:focus-visible { outline: 2px solid var(--green-700); outline-offset: 1px; }
 
 .eyebrow {
