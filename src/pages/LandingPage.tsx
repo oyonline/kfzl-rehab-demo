@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { IconLeaf, IconUser, IconFile } from '../components/Icons'
 import '../styles/app.css'
 
@@ -31,8 +30,6 @@ const ENTRIES = [
 ]
 
 export function LandingPage() {
-  const nav = useNavigate()
-
   return (
     <div className="app" data-skin="cool" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '32px 24px' }}>
       <div style={{ width: '100%', maxWidth: 860 }}>
@@ -51,11 +48,13 @@ export function LandingPage() {
 
         <div className="landing-grid">
           {ENTRIES.map((e) => (
-            <button
+            <a
               key={e.to}
               className="landing-card"
               data-skin={e.skin}
-              onClick={() => nav(e.to)}
+              href={e.to}
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label={`进入${e.title}`}
             >
               <span className="landing-ico">{e.icon}</span>
@@ -65,7 +64,7 @@ export function LandingPage() {
                 {e.points.map((p) => <li key={p}>{p}</li>)}
               </ul>
               <span className="landing-go">进入 →</span>
-            </button>
+            </a>
           ))}
         </div>
 
