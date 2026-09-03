@@ -585,6 +585,21 @@
 .vcard-d { font-size: var(--t-sm); color: var(--ink-3); margin: 4px 0 12px; }
 .vcard-m { display: flex; gap: 8px; flex-wrap: wrap; }
 
+.video-category-title {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border: 1px solid var(--green-100);
+  border-radius: var(--r);
+  box-shadow: inset 5px 0 0 var(--green-700);
+  background: linear-gradient(100deg, var(--green-100) 0%, var(--green-50) 58%, var(--surface) 100%);
+  color: var(--green-900);
+  font-size: var(--t-md);
+  font-weight: 650;
+  letter-spacing: .08em;
+}
+
 .steps { display: grid; gap: 16px; counter-reset: s; }
 .steps li { display: flex; gap: 15px; }
 .steps-n {

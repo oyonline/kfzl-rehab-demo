@@ -27,7 +27,7 @@ export function VideoLibraryView() {
         if (!group.length) return null
         return (
           <section className="stack" key={cat}>
-            <div className="eyebrow" style={{ marginBottom: -6 }}>{cat}</div>
+            <div className="video-category-title">{cat}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
               {group.map((v) => {
                 const task = taskDefs.find((t) => t.videoId === v.id)
