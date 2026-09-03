@@ -18,10 +18,19 @@
 
 .brand { display: flex; align-items: center; gap: 11px; }
 .brand-mark {
-  width: 32px; height: 32px; border-radius: 10px;
+  width: 46px; height: 46px; border-radius: 14px;
   background: var(--teal-700);
   color: #fff; display: grid; place-items: center;
+  flex: none; overflow: hidden; position: relative;
 }
+.brand-mark::after {
+  content: '';
+  position: absolute; inset: -12.5%;
+  background: url('/yinkang-anxin-logo.png') center / cover no-repeat;
+  mix-blend-mode: screen;
+  filter: grayscale(1) brightness(.65) contrast(10);
+}
+.brand-mark > svg { display: none; }
 .brand-name { font-size: var(--t-md); font-weight: 650; letter-spacing: .02em; }
 .brand-sub { font-size: var(--t-xs); color: var(--ink-3); margin-top: -3px; letter-spacing: .06em; }
 
