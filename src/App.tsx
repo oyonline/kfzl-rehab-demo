@@ -25,7 +25,7 @@ export default function App() {
             <LoginPage
               role="family"
               title="银康安馨"
-              subtitle="居家康复智能助手 · 家属登录"
+              subtitle="居家康复智能助手 · 老人／家属登录"
               home="/patient"
               skin="warm"
               hint="忘记密码请联系您的康复师"

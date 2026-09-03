@@ -88,7 +88,9 @@ export function PatientListView() {
           <tbody>
             {list.map((r) => {
               // 血压异常优先于咨询待回复 —— 前者是身体出状况，后者是沟通事项
-              const flag = r.bpAlert
+              const flag = r.todayTotal === 0
+                ? '康复计划待制定'
+                : r.bpAlert
                 ? '血压超出安全范围'
                 : r.pendingCount > 0
                   ? `${r.pendingCount} 条咨询待回复`
@@ -102,14 +104,14 @@ export function PatientListView() {
                     <span className="who-dot" style={{ width: 34, height: 34 }}>{r.name[0]}</span>
                     <span>
                       <div style={{ fontWeight: 620 }}>{r.name}</div>
-                      <div className="plist-meta">{r.gender} · {r.ageBand}</div>
+                      <div className="plist-meta">{[r.gender, r.ageBand].filter(Boolean).join(' · ')}</div>
                     </span>
                   </span>
                 </td>
-                <td style={{ color: 'var(--ink-2)' }}>{r.stage}</td>
+                <td style={{ color: 'var(--ink-2)' }}>{r.stage || '尚未录入'}</td>
                 <td>
-                  <span className={`chip ${r.todayDone >= r.todayTotal ? 'chip-ok' : ''} num`}>
-                    {r.todayDone}/{r.todayTotal}
+                  <span className={`chip ${r.todayTotal > 0 && r.todayDone >= r.todayTotal ? 'chip-ok' : ''} num`}>
+                    {r.todayTotal > 0 ? `${r.todayDone}/${r.todayTotal}` : '待制定'}
                   </span>
                 </td>
                 <td>

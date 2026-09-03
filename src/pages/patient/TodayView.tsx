@@ -21,6 +21,7 @@ export function TodayView() {
   useEffect(() => { markAllGuidanceRead() }, [state.guidances.length])
 
   const total = rows.length
+  const hasPlan = total > 0
   const done = rows.filter((r) => r.status === 'done').length
   const remaining = total - done
   const next = rows.find((r) => r.status === 'pending')
@@ -47,10 +48,16 @@ export function TodayView() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div className="hero-eyebrow">个性化康复计划与提醒</div>
           <div className="hero-line">
-            {remaining === 0 ? '今天的项目已经全部完成' : `今天还有 ${remaining} 项待完成`}
+            {!hasPlan
+              ? '康复计划待制定'
+              : remaining === 0
+                ? '今天的项目已经全部完成'
+                : `今天还有 ${remaining} 项待完成`}
           </div>
           <div className="hero-sub">
-            {remaining === 0
+            {!hasPlan
+              ? '康复师制定计划后，今日安排会显示在这里'
+              : remaining === 0
               ? '坚持得很好，明天继续保持'
               : next
                 ? `下一项 ${next.task.scheduledTime} · ${next.task.title}`
@@ -58,10 +65,10 @@ export function TodayView() {
           </div>
         </div>
         <div className="hero-next">
-          <div className="hero-next-k">连续坚持</div>
+          <div className="hero-next-k">{hasPlan ? '连续坚持' : '当前状态'}</div>
           <div className="hero-next-v num">
-            {streak(state.checkIns, total)}
-            <span style={{ fontSize: 'var(--t-sm)', fontWeight: 500, marginLeft: 4, opacity: .75 }}>天</span>
+            {hasPlan ? streak(state.checkIns, total) : '待制定'}
+            {hasPlan && <span style={{ fontSize: 'var(--t-sm)', fontWeight: 500, marginLeft: 4, opacity: .75 }}>天</span>}
           </div>
         </div>
       </section>
@@ -93,17 +100,23 @@ export function TodayView() {
         <div className="card-hd">
           <div>
             <div className="eyebrow">今日安排</div>
-            <h2 className="card-title">按康复师制定的计划执行</h2>
+            <h2 className="card-title">{hasPlan ? '按康复师制定的计划执行' : '尚未制定康复计划'}</h2>
           </div>
           <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <Link to="/patient/videos" className="card-note" style={{ color: 'var(--green-700)', fontWeight: 550 }}>
               全部训练视频
             </Link>
-            <span className="chip chip-brand num">{done} / {total}</span>
+            <span className="chip chip-brand num">{hasPlan ? `${done} / ${total}` : '待制定'}</span>
           </span>
         </div>
 
         <div className="timeline">
+          {!hasPlan && (
+            <div className="empty-chat">
+              <div className="big">暂无今日安排</div>
+              <div>康复师完成评估并制定计划后，训练和提醒会自动出现在这里。</div>
+            </div>
+          )}
           {rows.map(({ task, checkIn, status }) => {
             const isDone = status === 'done'
             const isNext = next?.task.id === task.id
@@ -226,7 +239,7 @@ function Ring({ done, total }: { done: number; total: number }) {
       <div className="ring-label num" style={{ color: '#fff' }}>
         {/* 必须包一层 span：ring-label 是 grid 容器，裸文字节点与 <small>
             会被当成两个格子上下排，导致 "/ 4" 掉到圆环底部 */}
-        <span>{done}<small>/{total}</small></span>
+        <span>{total ? done : '—'}{total > 0 && <small>/{total}</small>}</span>
       </div>
     </div>
   )
@@ -234,6 +247,7 @@ function Ring({ done, total }: { done: number; total: number }) {
 
 /** 连续全部完成的天数（今天未完成时从昨天起算） */
 function streak(checkIns: { date: string; status: string }[], perDay: number) {
+  if (perDay <= 0) return 0
   const byDate = new Map<string, number>()
   checkIns.forEach((c) => { if (c.status === 'done') byDate.set(c.date, (byDate.get(c.date) ?? 0) + 1) })
   let n = 0

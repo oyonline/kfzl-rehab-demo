@@ -33,7 +33,7 @@ export function FollowupView() {
     <div className="stack">
       <section className="card card-pad">
         <div className="stats">
-          <Stat k="今日完成" v={`${done}`} unit={`/ ${rows.length}`} />
+          <Stat k="今日完成" v={rows.length ? `${done}` : '—'} unit={rows.length ? `/ ${rows.length}` : undefined} />
           <Stat k="近 7 日完成率" v={weekRate === null ? '—' : `${weekRate}`} unit={weekRate === null ? undefined : '%'} />
           <Stat k="患侧" v={patient.functionStatus.affectedSide} small />
           <Stat k="吞咽" v={swallowBrief} small />
@@ -49,6 +49,12 @@ export function FollowupView() {
           <span className="card-note num">{today}</span>
         </div>
 
+        {rows.length === 0 ? (
+          <div className="empty-chat">
+            <div className="big">尚未制定康复计划</div>
+            <div>制定计划后，当日训练项目和执行状态会显示在这里</div>
+          </div>
+        ) : (
         <table className="tbl">
           <thead>
             <tr><th>时间</th><th>训练项目</th><th>处方要求</th><th>状态</th><th style={{ textAlign: 'right' }}>打卡时刻</th></tr>
@@ -84,6 +90,7 @@ export function FollowupView() {
             ))}
           </tbody>
         </table>
+        )}
       </section>
       {uploads.length > 0 && (
         <section className="card card-pad">

@@ -1,8 +1,8 @@
 /**
  * 种子灌入 —— 把 src/data/ 里的演示数据搬进数据库。
  *
- * 只灌林奶奶一位患者：2026-08-30 用户裁决「不为演示编造第二份病例，
- * 另 6 位改为由建档功能真实录入」。因此 roster 不再预置。
+ * 林奶奶保留完整演示数据；赵爷爷按 2026-09-03 用户裁决仅预置
+ * 最小建档记录，不预置诊断、评估、用药、康复计划或执行历史。
  *
  * 幂等：每次运行先清空业务表再重灌，便于反复排练。
  * 用 `pnpm seed` 执行。
@@ -49,6 +49,8 @@ const seed = db.transaction(() => {
   const users = [
     { id: 'u-family-chen', username: 'chen', pw: '123456', role: 'family',
       display: '陈女士（女儿）', title: null },
+    { id: 'u-family-zhao', username: 'zhao', pw: '123456', role: 'family',
+      display: '赵爷爷', title: null },
     { id: 'u-th-xiaoting', username: 'xiaoting', pw: '123456', role: 'therapist',
       display: therapist.name, title: therapist.title },
   ]
@@ -92,6 +94,22 @@ const seed = db.transaction(() => {
      caregiver_name,caregiver_relation,assistive_devices,past_history) VALUES (?,?,?,?,?,?,?,?)`)
     .run(p.id, p.emergencyContact.name, p.emergencyContact.relation, p.emergencyContact.phoneMasked,
          p.caregiver.name, p.caregiver.relation, J(p.assistiveDevices), J(p.pastHistory))
+
+  /* 赵爷爷：只建立患者索引和空档案骨架，康复计划尚未制定 */
+  const zhaoId = 'p-zhao-grandpa'
+  db.prepare(`INSERT INTO patients
+    (id,name,gender,age_band,living_situation,psychosocial,communication,avatar,
+     primary_therapist_id,origin,status,created_at,updated_at)
+    VALUES (?,?,'男','','','','','',?,'synthetic','active',?,?)`)
+    .run(zhaoId, '赵爷爷', 'u-th-xiaoting', now, now)
+  insMember.run(zhaoId, 'u-th-xiaoting', '主管康复师', 'primary', now)
+  insMember.run(zhaoId, 'u-family-zhao', '本人', 'owner', now)
+  db.prepare("INSERT INTO patient_diagnosis (patient_id,stage,comorbidities) VALUES (?,'','[]')").run(zhaoId)
+  db.prepare("INSERT INTO patient_function (patient_id,risks,care_alerts) VALUES (?,'[]','[]')").run(zhaoId)
+  db.prepare("INSERT INTO patient_goals (patient_id,short_term) VALUES (?,'[]')").run(zhaoId)
+  db.prepare(`INSERT INTO patient_contact
+    (patient_id,caregiver_name,caregiver_relation,assistive_devices,past_history)
+    VALUES (?,'','','[]','[]')`).run(zhaoId)
 
   const insMed = db.prepare(`INSERT INTO medications
     (id,patient_id,name,dose,times,notes,confirmed,sort_order) VALUES (?,?,?,?,?,?,?,?)`)

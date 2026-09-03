@@ -162,18 +162,20 @@ function PatientShellInner() {
             <div className="avatar">{patient.name[0]}</div>
             <div>
               <div className="profile-name">{patient.name}</div>
-              <div className="profile-meta">{patient.gender} · {patient.ageBand}</div>
+              <div className="profile-meta">{[patient.gender, patient.ageBand].filter(Boolean).join(' · ') || '基本信息待完善'}</div>
             </div>
           </div>
 
           <div className="profile-tags">
-            <span className="chip chip-brand">{patient.diagnosis.stage.replace('居家康复·', '')}</span>
-            <span className="profile-dx">{patient.diagnosis.strokeType}</span>
+            {patient.diagnosis.stage && <span className="chip chip-brand">{patient.diagnosis.stage.replace('居家康复·', '')}</span>}
+            {patient.diagnosis.strokeType && <span className="profile-dx">{patient.diagnosis.strokeType}</span>}
+            {!patient.diagnosis.stage && !patient.diagnosis.strokeType && <span className="chip">档案待完善</span>}
           </div>
 
           {/* ② 评估摘要 —— 四张量表的分值，全卡最有说服力的部分 */}
           <div className="fgroup fgroup-bare">评估摘要</div>
           <div className="assess">
+            {assessTiles.length === 0 && <div className="card-note">尚未开始评估</div>}
             {assessTiles.map((t) => (
               <div className="assess-i" key={t.label}>
                 <div className="assess-k">{t.label}</div>
@@ -182,17 +184,19 @@ function PatientShellInner() {
               </div>
             ))}
           </div>
-          <div className="assess-src">{assessDate} · 康复团队评估</div>
+          {assessDate && <div className="assess-src">{assessDate} · 康复团队评估</div>}
 
           <dl className="facts" style={{ marginTop: 18 }}>
             <div className="fact">
               <dt className="fact-k">合并疾病</dt>
               <dd className="fact-v" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-                {patient.diagnosis.comorbidities.map((c) => <span className="chip" key={c}>{c}</span>)}
+                {patient.diagnosis.comorbidities.length > 0
+                  ? patient.diagnosis.comorbidities.map((c) => <span className="chip" key={c}>{c}</span>)
+                  : '尚未录入'}
               </dd>
             </div>
-            <Fact k="主要照护人" v={`${patient.caregiver.name}（${patient.caregiver.relation}）`} />
-            <Fact k="下次复评" v={patient.goals.nextReviewDate} />
+            <Fact k="主要照护人" v={patient.caregiver.name ? `${patient.caregiver.name}${patient.caregiver.relation ? `（${patient.caregiver.relation}）` : ''}` : '尚未录入'} />
+            <Fact k="下次复评" v={patient.goals.nextReviewDate || '待安排'} />
           </dl>
 
           <button className="link-more" onClick={() => setProfileOpen(true)}>
@@ -202,9 +206,9 @@ function PatientShellInner() {
           {/* ③ 今日须注意 —— 三条各自对应一项评估结论与一项今日任务 */}
           <div className="risk">
             <div className="risk-t"><IconAlert size={15} /> 今日须注意</div>
-            <ul>
-              {careAlerts.map((a) => <li key={a}>{a}</li>)}
-            </ul>
+            {careAlerts.length > 0
+              ? <ul>{careAlerts.map((a) => <li key={a}>{a}</li>)}</ul>
+              : <div className="card-note" style={{ marginTop: 8 }}>暂无个性化注意事项</div>}
           </div>
         </aside>
 
