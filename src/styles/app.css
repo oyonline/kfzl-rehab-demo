@@ -445,15 +445,6 @@
 .escalate .btn { background: var(--clay-700); box-shadow: none; padding: 7px 14px; }
 .escalate .btn:hover { background: #8d4d1f; }
 
-.suggests { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-.suggest {
-  padding: 10px 16px; border-radius: var(--r-pill);
-  border: 1px solid var(--line-2); background: var(--surface);
-  font-size: var(--t-sm); color: var(--ink-2); text-align: left;
-  transition: border-color .15s, color .15s, background .15s;
-}
-.suggest:hover { border-color: var(--green-300); color: var(--green-700); background: var(--green-50); }
-
 .composer { display: flex; gap: 12px; align-items: flex-end; padding-top: 18px; border-top: 1px solid var(--line); }
 .composer .ta { flex: 1; min-height: 52px; }
 

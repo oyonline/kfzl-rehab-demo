@@ -389,15 +389,18 @@ export function ChatView() {
     setTrace(null)
   }, [trace, messages])
 
-  // waitingLLM 也要算忙：等模型首字的空窗期不锁住的话，用户能连点预设/重复提问
-  const busy = trace !== null || waitingLLM || streamingId !== null || streamingText !== ''
-  const unasked = busy ? [] : PRESET_QA.filter((q) => !messages.some((m) => m.role === 'family' && m.text === q.question))
+  // 2026-09-03 用户裁决：移除预设问题快捷按钮，改为用户自由输入。
+  // 输入框发送时仍按原文精确匹配 PRESET_QA —— 手输预设问题照样出甲方原文答案，
+  // 兜底机制不动，删的只是「方便点击」的入口。
+  // 注：远端 278a9f4 引入的 busy（含 waitingLLM）原本只为锁 unasked，
+  // 按钮移除后无消费者，随 unasked 一并移除；等待空窗的思考占位由
+  // waitingLLM 直接驱动，不受影响。
 
   return (
     <section className="card card-pad chat">
       <div className="card-hd">
         <div>
-          <div className="eyebrow">康复咨询</div>
+          <div className="eyebrow">智能对话咨询</div>
           <h2 className="card-title">结合 {patient.name} 的档案作答</h2>
         </div>
         <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
@@ -530,14 +533,6 @@ export function ChatView() {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        {unasked.length > 0 && (
-          <div className="suggests">
-            {unasked.map((q) => (
-              <button className="suggest" key={q.id} onClick={() => { void reply(q, q.question) }}>{q.question}</button>
-            ))}
-          </div>
-        )}
-
         <div className="composer">
           <textarea
             className="ta"
