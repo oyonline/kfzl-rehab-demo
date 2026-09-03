@@ -45,7 +45,7 @@ export function TodayView() {
       <section className="hero">
         <Ring done={done} total={total} />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div className="hero-eyebrow">今日康复</div>
+          <div className="hero-eyebrow">个性化康复计划与提醒</div>
           <div className="hero-line">
             {remaining === 0 ? '今天的项目已经全部完成' : `今天还有 ${remaining} 项待完成`}
           </div>

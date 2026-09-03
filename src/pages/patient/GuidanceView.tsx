@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useContent, usePatientData } from '../../data/context'
-import { IconActivity, IconAlert, IconApple, IconBan, IconChevron, IconDroplet, IconHeart, IconHome, IconLeaf, IconUtensils } from '../../components/Icons'
+import { IconActivity, IconAlert, IconApple, IconBan, IconChevron, IconDroplet, IconLeaf, IconUtensils } from '../../components/Icons'
 
 const GUIDANCE_ICONS: Record<string, React.ReactNode> = {
   feeding: <IconUtensils size={19} />,
@@ -8,8 +8,6 @@ const GUIDANCE_ICONS: Record<string, React.ReactNode> = {
   menu: <IconApple size={19} />,
   'bp-diet': <IconActivity size={19} />,
   taboo: <IconBan size={19} />,
-  monitor: <IconHeart size={19} />,
-  safety: <IconHome size={19} />,
 }
 
 /**
@@ -27,10 +25,10 @@ export function GuidanceView() {
   return (
     <div className="stack">
       <section className="card card-pad">
-        <div className="eyebrow">饮食与健康指导</div>
+        <div className="eyebrow">饮食指导</div>
         <h2 className="card-title">按 {patient.diagnosis.stage} 给出的日常建议</h2>
         <p className="card-note" style={{ marginTop: 6 }}>
-          结合她的吞咽情况、合并疾病与跌倒风险整理；涉及性状调整与用药的部分由康复师确定
+          内容取自甲方《饮食与营养指导》知识库文档，结合她的吞咽情况与合并疾病整理；涉及性状调整与用药的部分由康复师确定
         </p>
       </section>
 

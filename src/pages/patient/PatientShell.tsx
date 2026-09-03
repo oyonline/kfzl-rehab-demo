@@ -16,14 +16,21 @@ import { VitalsView } from './VitalsView'
 import { GuidanceDetailView } from './GuidanceDetailView'
 import { VideoLibraryView } from './VideoLibraryView'
 import { VideoDetailView } from './VideoDetailView'
+import { ResourcesView } from './ResourcesView'
+import { ResourceDetailView } from './ResourceDetailView'
+import { ForumView } from './ForumView'
+import { ForumPostView } from './ForumPostView'
 import '../../styles/app.css'
 
 const NAV = [
-  { to: '/patient', label: '今日', end: true },
-  { to: '/patient/chat', label: '康复咨询' },
+  { to: '/patient', label: '个性化康复计划与提醒', end: true },
+  { to: '/patient/chat', label: '智能对话咨询' },
+  { to: '/patient/videos', label: '康复训练视频库' },
   { to: '/patient/calendar', label: '打卡日历' },
-  { to: '/patient/guidance', label: '饮食与健康' },
+  { to: '/patient/guidance', label: '饮食指导' },
   { to: '/patient/vitals', label: '健康数据' },
+  { to: '/patient/resources', label: '宣传册·政策·专家' },
+  { to: '/patient/forum', label: '家属互助论坛' },
 ]
 
 /**
@@ -112,7 +119,8 @@ function PatientShellInner() {
               <div className="brand-sub">居家康复智能助手</div>
             </span>
           </div>
-          <nav className="nav">
+          {/* 8 项导航超出常规密度，用紧凑版式避免顶栏溢出换行 */}
+          <nav className="nav nav-tight">
             {NAV.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'active' : '')}>
                 {n.label}
@@ -209,6 +217,10 @@ function PatientShellInner() {
           <Route path="vitals" element={<VitalsView />} />
           <Route path="guidance" element={<GuidanceView />} />
           <Route path="guidance/:id" element={<GuidanceDetailView />} />
+          <Route path="resources" element={<ResourcesView />} />
+          <Route path="resources/:kind/:id" element={<ResourceDetailView />} />
+          <Route path="forum" element={<ForumView />} />
+          <Route path="forum/:id" element={<ForumPostView />} />
         </Routes>
       </main>
 

@@ -383,6 +383,11 @@
 .nav a:hover { background: var(--surface-2); color: var(--ink); }
 .nav a.active { background: var(--green-100); color: var(--green-700); font-weight: 650; }
 
+/* 家属端 2026-08-31 起扩到 8 项（含「个性化康复计划与提醒」「宣传册·政策·专家」等长标签），
+   紧凑版式防止 1440 宽以下顶栏溢出换行 */
+.nav-tight { gap: 1px; margin-left: 18px; }
+.nav-tight a { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+
 /* ---------------- 咨询对话 ---------------- */
 
 .chat { display: flex; flex-direction: column; min-height: 560px; }

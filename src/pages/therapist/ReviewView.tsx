@@ -34,7 +34,7 @@ interface Item {
 const TABS: { kind: Kind; label: string; source: string }[] = [
   { kind: 'kb', label: '知识库语料', source: '甲方交付的 57 篇科普与政策' },
   { kind: 'preset_qa', label: '咨询预设答案', source: 'src/data/qa.ts' },
-  { kind: 'guidance', label: '饮食与健康指导', source: 'src/data/guidance.ts' },
+  { kind: 'guidance', label: '饮食指导', source: 'src/data/guidance.ts' },
   { kind: 'video_steps', label: '训练分步说明', source: 'src/data/videoSteps.ts' },
 ]
 

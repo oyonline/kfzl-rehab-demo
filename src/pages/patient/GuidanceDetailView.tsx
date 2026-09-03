@@ -18,7 +18,7 @@ export function GuidanceDetailView() {
   return (
     <div className="stack">
       <div className="crumb">
-        <Link to="/patient/guidance">饮食与健康</Link>
+        <Link to="/patient/guidance">饮食指导</Link>
         <span>/</span>
         <span>{g.title}</span>
       </div>
