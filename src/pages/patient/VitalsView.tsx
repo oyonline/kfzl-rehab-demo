@@ -67,12 +67,12 @@ export function VitalsView() {
         <div className="bp-form">
           <label className="bp-field">
             <span>高压（收缩压）</span>
-            <input className="input num" inputMode="numeric" value={sys} onChange={(e) => setSys(e.target.value.replace(/\D/g, ''))} placeholder="118" />
+            <input className="input num" inputMode="numeric" value={sys} onChange={(e) => setSys(e.target.value.replace(/\D/g, ''))} />
           </label>
           <span className="bp-sep">/</span>
           <label className="bp-field">
             <span>低压（舒张压）</span>
-            <input className="input num" inputMode="numeric" value={dia} onChange={(e) => setDia(e.target.value.replace(/\D/g, ''))} placeholder="74" />
+            <input className="input num" inputMode="numeric" value={dia} onChange={(e) => setDia(e.target.value.replace(/\D/g, ''))} />
           </label>
           <span className="bp-unit">mmHg</span>
           <button className="btn btn-lg" onClick={submit} data-done={justSaved}><IconCheck size={13} /> {justSaved ? '已记录' : '记录'}</button>

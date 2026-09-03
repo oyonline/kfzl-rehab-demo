@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { FORUM_DISCLAIMER, FORUM_POSTS } from '../../data/resources'
-import { IconAlert, IconCheck, IconChat, IconChevron } from '../../components/Icons'
+import { FORUM_POSTS } from '../../data/resources'
+import { IconCheck, IconChat, IconChevron } from '../../components/Icons'
 
 /**
  * 家属互助论坛（演示版）—— 需求书 3.9：
@@ -19,16 +19,11 @@ export function ForumView() {
 
       <section className="card card-pad">
         <div className="eyebrow">家属互助论坛</div>
-        <h2 className="card-title">家属互助 + 专业支持 + AI 辅助</h2>
+        <h2 className="card-title">家属互助 + 专业支持</h2>
         <p className="card-note" style={{ marginTop: 6 }}>
           分享照护经验、交流康复心得、互相鼓励。康复师团队在群内定期答疑、发布每周话题
         </p>
       </section>
-
-      <div className="alert">
-        <span style={{ flex: 'none', marginTop: 2 }}><IconAlert size={15} /></span>
-        <span>{FORUM_DISCLAIMER}</span>
-      </div>
 
       <div className="glist">
         {FORUM_POSTS.map((p) => (
