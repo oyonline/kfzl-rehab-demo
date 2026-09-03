@@ -22,20 +22,6 @@ export function VideoLibraryView() {
   const { videoCategories: VIDEO_CATEGORIES, videos, videoSteps: VIDEO_STEPS } = useContent()
   return (
     <div className="stack">
-      <div className="crumb">
-        <Link to="/patient">今日安排</Link>
-        <span>/</span>
-        <span>训练视频</span>
-      </div>
-
-      <section className="card card-pad">
-        <div className="eyebrow">训练视频</div>
-        <h2 className="card-title">康复师为她安排的训练</h2>
-        <p className="card-note" style={{ marginTop: 6 }}>
-          带时间标记的对应今日安排，其余可按需观看
-        </p>
-      </section>
-
       {VIDEO_CATEGORIES.map((cat) => {
         const group = videos.filter((v) => v.category === cat)
         if (!group.length) return null
