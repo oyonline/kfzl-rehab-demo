@@ -17,20 +17,22 @@ contentRouter.get('/', requireAuth, (_req, res) => {
 
   // 分步说明按视频归组，形状对齐前端原来的 VIDEO_STEPS: Record<id, Step[]>
   const steps: Record<string, { title: string; detail: string }[]> = {}
-  for (const r of db.prepare('SELECT * FROM video_steps ORDER BY video_id, seq').all() as any[]) {
+  for (const r of db.prepare(`SELECT st.* FROM video_steps st
+    JOIN videos v ON v.id=st.video_id
+    WHERE v.steps_review_status='approved'
+    ORDER BY st.video_id,st.seq`).all() as any[]) {
     (steps[r.video_id] ??= []).push({ title: r.title, detail: r.detail })
   }
 
   res.json({
     videos,
     videoSteps: steps,
-    // rejected 的不下发；pending 仍下发 —— 演示内容尚未经专业审核是既有事实，
-    // 藏起来反而会让页面空掉。审核状态一并带出，后台据此展示。
+    // 只有已通过内容才能下发；新增或改写内容会回到 pending，等待重新审核。
     guidance: (db.prepare(
-      `SELECT * FROM guidance_articles WHERE review_status <> 'rejected' ORDER BY sort_order`,
+      `SELECT * FROM guidance_articles WHERE review_status='approved' ORDER BY sort_order`,
     ).all() as any[]).map(toGuidanceCard),
     presetQA: (db.prepare(
-      `SELECT * FROM preset_qa WHERE review_status <> 'rejected' ORDER BY sort_order`,
+      `SELECT * FROM preset_qa WHERE review_status='approved' ORDER BY sort_order`,
     ).all() as any[]).map(toPresetQA),
     videoCategories: (db.prepare(
       'SELECT DISTINCT category FROM videos ORDER BY sort_order',

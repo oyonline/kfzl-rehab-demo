@@ -22,16 +22,14 @@ export function TherapistShell() {
   /**
    * 待处理角标是**跨患者**的，不能读 store —— store 的缓存只装当前患者。
    * 换页时重取一次：康复师回复完再切回来，角标要跟着降下去。
-   */
+  */
   const [pending, setPending] = useState(0)
-  // 待审内容总数（语料 + 三类文案），与待回复咨询同样做成角标
   const [reviewPending, setReviewPending] = useState(0)
-  // 审核页在同一路由内改状态，pathname 不变，靠事件通知重取
-  const [tick, setTick] = useState(0)
+  const [reviewTick, setReviewTick] = useState(0)
   useEffect(() => {
-    const h = () => setTick((n) => n + 1)
-    window.addEventListener('kfzl:review-changed', h)
-    return () => window.removeEventListener('kfzl:review-changed', h)
+    const handleReviewChange = () => setReviewTick((n) => n + 1)
+    window.addEventListener('kfzl:review-changed', handleReviewChange)
+    return () => window.removeEventListener('kfzl:review-changed', handleReviewChange)
   }, [])
   useEffect(() => {
     let alive = true
@@ -43,15 +41,15 @@ export function TherapistShell() {
         if (alive) setPending(d.escalations?.length ?? 0)
       } catch { /* 会话失效由 authFetch 处理 */ }
       try {
-        const r = await authFetch('/api/review/summary')
-        if (!r.ok) return
-        const s = await r.json()
-        const n = Object.values(s).reduce((a: number, v: any) => a + (v?.pending ?? 0), 0)
-        if (alive) setReviewPending(n as number)
+        const response = await authFetch('/api/review/summary')
+        if (!response.ok) return
+        const summary = await response.json()
+        const count = Object.values(summary).reduce((n: number, value: any) => n + (value?.pending ?? 0), 0)
+        if (alive) setReviewPending(count as number)
       } catch { /* 同上 */ }
     })()
     return () => { alive = false }
-  }, [loc.pathname, tick])
+  }, [loc.pathname, reviewTick])
 
   const NAV = [
     { to: '/therapist', label: '在管患者', end: true },

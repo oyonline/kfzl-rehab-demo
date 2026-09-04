@@ -4,7 +4,9 @@
  * 林奶奶保留完整演示数据；赵爷爷按 2026-09-03 用户裁决仅预置
  * 最小建档记录，不预置诊断、评估、用药、康复计划或执行历史。
  *
- * 幂等：每次运行先清空业务表再重灌，便于反复排练。
+ * 幂等：每次运行先清空业务表（包括演示审计日志）再重灌，便于反复排练。
+ * 只有 approval-manifest.ts 中 ID 与内容哈希都匹配的固定版本会恢复为已通过；
+ * 新增或改写内容一律回到待审。
  * 用 `pnpm seed` 执行。
  */
 
@@ -20,6 +22,15 @@ import { VIDEO_STEPS } from '../../src/data/videoSteps.ts'
 import { CARE_ALERTS, GUIDANCE } from '../../src/data/guidance.ts'
 import { PRESET_QA } from '../../src/data/qa.ts'
 import { DAILY_REMINDERS } from '../../src/data/reminders.ts'
+import {
+  APPROVAL_RECORDED_AT,
+  APPROVED_GUIDANCE,
+  APPROVED_KB_DOCUMENTS,
+  APPROVED_PRESET_QA,
+  APPROVED_VIDEO_STEPS,
+  hashApprovedContent,
+  isApprovedVersion,
+} from '../content/approval-manifest.ts'
 
 const now = new Date().toISOString()
 const J = (v: unknown) => JSON.stringify(v ?? [])
@@ -60,6 +71,19 @@ const seed = db.transaction(() => {
   for (const u of users) {
     const { hash, salt } = hashPassword(u.pw)
     insUser.run(u.id, u.username, hash, salt, u.role, u.display, u.title, now, now)
+  }
+
+  const recordManifestApproval = (entity: string, entityId: string) => {
+    db.prepare(`INSERT INTO audit_log
+      (id,user_id,action,entity,entity_id,detail,ip,at) VALUES (?,NULL,'review_approved',?,?,?,NULL,?)`)
+      .run(`manifest-approval-${entity}-${entityId}`, entity, entityId,
+        JSON.stringify({ source: 'user-confirmed approval manifest' }), APPROVAL_RECORDED_AT)
+  }
+  for (const row of db.prepare(`SELECT id,content_hash FROM kb_documents
+    WHERE review_status='approved' AND enabled=1`).all() as { id: string; content_hash: string }[]) {
+    if (!isApprovedVersion(APPROVED_KB_DOCUMENTS, row.id, row.content_hash)) continue
+    db.prepare('UPDATE kb_documents SET reviewed_at=? WHERE id=?').run(APPROVAL_RECORDED_AT, row.id)
+    recordManifestApproval('kb_document', row.id)
   }
 
   /* ---------- 患者 ---------- */
@@ -147,6 +171,11 @@ const seed = db.transaction(() => {
   const insStep = db.prepare(`INSERT INTO video_steps (video_id,seq,title,detail) VALUES (?,?,?,?)`)
   for (const [vid, steps] of Object.entries(VIDEO_STEPS)) {
     steps.forEach((s, i) => insStep.run(vid, i, s.title, s.detail))
+    if (isApprovedVersion(APPROVED_VIDEO_STEPS, vid, hashApprovedContent(steps))) {
+      db.prepare("UPDATE videos SET steps_review_status='approved',steps_reviewed_at=? WHERE id=?")
+        .run(APPROVAL_RECORDED_AT, vid)
+      recordManifestApproval('video_steps', vid)
+    }
   }
 
   /* ---------- 计划 ---------- */
@@ -165,18 +194,26 @@ const seed = db.transaction(() => {
     insRem.run(r.id, p.id, r.time, r.text, r.taskId ?? null, r.highlight ? 1 : 0)
   }
 
-  /* ---------- 待审内容（README 的三个 REVIEW REQUIRED 就此进库） ---------- */
+  /* ---------- 已完成专业审核的内容 ---------- */
   const insGuide = db.prepare(`INSERT INTO guidance_articles
-    (id,title,summary,items,alert,related_video_id,origin,review_status,sort_order,updated_at)
-    VALUES (?,?,?,?,?,?,'team_reviewed','pending',?,?)`)
-  GUIDANCE.forEach((g, i) => insGuide.run(g.id, g.title, g.summary, J(g.items),
-    g.alert ?? null, g.relatedVideoId ?? null, i, now))
+    (id,title,summary,items,alert,related_video_id,origin,review_status,reviewed_at,sort_order,updated_at)
+    VALUES (?,?,?,?,?,?,'team_reviewed',?,?,?,?)`)
+  GUIDANCE.forEach((g, i) => {
+    const approved = isApprovedVersion(APPROVED_GUIDANCE, g.id, hashApprovedContent(g))
+    insGuide.run(g.id, g.title, g.summary, J(g.items), g.alert ?? null, g.relatedVideoId ?? null,
+      approved ? 'approved' : 'pending', approved ? APPROVAL_RECORDED_AT : null, i, now)
+    if (approved) recordManifestApproval('guidance', g.id)
+  })
 
   const insQA = db.prepare(`INSERT INTO preset_qa
-    (id,question,basis,external,answer,escalate,escalate_hint,origin,review_status,sort_order)
-    VALUES (?,?,?,?,?,?,?,'team_reviewed','pending',?)`)
-  PRESET_QA.forEach((q, i) => insQA.run(q.id, q.question, J(q.basis), J(q.external), J(q.answer),
-    q.escalate ? 1 : 0, q.escalateHint ?? null, i))
+    (id,question,basis,external,answer,escalate,escalate_hint,origin,review_status,reviewed_at,sort_order)
+    VALUES (?,?,?,?,?,?,?,'team_reviewed',?,?,?)`)
+  PRESET_QA.forEach((q, i) => {
+    const approved = isApprovedVersion(APPROVED_PRESET_QA, q.id, hashApprovedContent(q))
+    insQA.run(q.id, q.question, J(q.basis), J(q.external), J(q.answer), q.escalate ? 1 : 0,
+      q.escalateHint ?? null, approved ? 'approved' : 'pending', approved ? APPROVAL_RECORDED_AT : null, i)
+    if (approved) recordManifestApproval('preset_qa', q.id)
+  })
 
   /* ---------- 历史打卡与血压 ---------- */
   const today = new Date()

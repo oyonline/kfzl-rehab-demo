@@ -32,8 +32,8 @@ interface Item {
 }
 
 const TABS: { kind: Kind; label: string; source: string }[] = [
-  { kind: 'kb', label: '知识库语料', source: '甲方交付的 57 篇科普与政策' },
-  { kind: 'preset_qa', label: '咨询预设答案', source: 'src/data/qa.ts' },
+  { kind: 'kb', label: '知识库·参考资料', source: '供智能咨询检索的科普与政策资料' },
+  { kind: 'preset_qa', label: '知识库·标准问答', source: '命中常见问题后直接使用的标准答案' },
   { kind: 'guidance', label: '饮食指导', source: 'src/data/guidance.ts' },
   { kind: 'video_steps', label: '训练分步说明', source: 'src/data/videoSteps.ts' },
 ]
@@ -56,7 +56,7 @@ export function ReviewView() {
   const [summary, setSummary] = useState<Record<string, Record<string, number>>>({})
   const [audit, setAudit] = useState<any[] | null>(null)
   const [showAudit, setShowAudit] = useState(false)
-  const [onlyPending, setOnlyPending] = useState(true)
+  const [onlyPending, setOnlyPending] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const loadSummary = useCallback(async () => {
@@ -99,7 +99,9 @@ export function ReviewView() {
       const r = await authFetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewStatus: status }),
+        body: JSON.stringify(tab === 'kb'
+          ? { reviewStatus: status, enabled: status === 'approved' }
+          : { reviewStatus: status }),
       })
       if (!r.ok) return
       setItems((prev) => prev?.map((x) => (x.id === item.id ? { ...x, reviewStatus: status } : x)) ?? prev)
@@ -120,8 +122,8 @@ export function ReviewView() {
   }, [])
 
   const counts = summary[tab === 'kb' ? 'kb_documents' : tab] ?? {}
-  const pendingTotal = Object.entries(summary).reduce((n, [, v]) => n + (v.pending ?? 0), 0)
-  const shown = items?.filter((i) => !onlyPending || i.reviewStatus === 'pending') ?? null
+  const pendingTotal = Object.values(summary).reduce((n, v) => n + (v.pending ?? 0), 0)
+  const shown = items?.filter((item) => !(pendingTotal > 0 && onlyPending) || item.reviewStatus === 'pending') ?? null
 
   return (
     <div className="stack">
@@ -130,7 +132,7 @@ export function ReviewView() {
           <div>
             <div className="eyebrow">内容审核</div>
             <h1 className="card-title" style={{ fontSize: 'var(--t-xl)' }}>
-              待审内容
+              {pendingTotal > 0 ? '待审内容' : '已审核内容'}
               {pendingTotal > 0 && <span className="chip chip-wait" style={{ marginLeft: 10 }}>{pendingTotal}</span>}
             </h1>
           </div>
@@ -142,14 +144,17 @@ export function ReviewView() {
         <div className="review-notice">
           <IconAlert size={14} />
           <span>
-            本页只是工具。<b>医疗性内容仍须由康复专业人员逐条审核</b>——通过与否由您判断，
-            系统不替任何内容背书。驳回的内容立即停止对家属展示。
+            知识库包含<b>标准问答</b>和<b>参考资料</b>：常见问题直接使用标准问答，
+            其他问题才检索参考资料。
+            {pendingTotal > 0
+              ? ` 当前有 ${pendingTotal} 项内容等待审核，未通过前不会对家属展示。`
+              : ' 当前内容均已完成审核；驳回后会立即停止对家属展示。'}
           </span>
         </div>
 
         <div className="nav" style={{ marginTop: 18, flexWrap: 'wrap' }}>
           {TABS.map((t) => {
-            const c = summary[t.kind === 'kb' ? 'kb_documents' : t.kind]?.pending ?? 0
+            const pending = summary[t.kind === 'kb' ? 'kb_documents' : t.kind]?.pending ?? 0
             return (
               <button
                 key={t.kind}
@@ -158,7 +163,7 @@ export function ReviewView() {
                 title={t.source}
               >
                 {t.label}
-                {c > 0 && <span className="nav-badge num">{c}</span>}
+                {pending > 0 && <span className="nav-badge num">{pending}</span>}
               </button>
             )
           })}
@@ -197,19 +202,21 @@ export function ReviewView() {
               {TABS.find((t) => t.kind === tab)?.label}
             </h2>
             <p className="card-note" style={{ marginTop: 4 }}>
-              待审 {counts.pending ?? 0} · 已通过 {counts.approved ?? 0} · 已驳回 {counts.rejected ?? 0}
+              {counts.pending ? `待审 ${counts.pending} · ` : ''}
+              已通过 {counts.approved ?? 0} · 已驳回 {counts.rejected ?? 0}
             </p>
           </div>
-          <label className="card-note" style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
-            <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} />
-            只看待审
-          </label>
+          {pendingTotal > 0 && (
+            <label className="card-note" style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
+              <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} />
+              只看待审
+            </label>
+          )}
         </div>
 
         {!shown ? <p className="card-note">读取中…</p> : shown.length === 0 ? (
           <div className="empty-chat">
-            <div className="big">{onlyPending ? '没有待审内容' : '暂无内容'}</div>
-            {onlyPending && <div>取消「只看待审」可查看已处理的条目</div>}
+            <div className="big">暂无内容</div>
           </div>
         ) : (
           <div className="stack" style={{ gap: 12 }}>

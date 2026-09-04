@@ -9,11 +9,16 @@
 
 import { readdirSync, statSync } from 'fs'
 import { join, relative, basename } from 'path'
-import { createHash } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import { getDb, closeDb } from '../db/index.ts'
 import { extractDocx, detectProvenance } from './docx.ts'
 import { chunkText, jaccard } from './chunk.ts'
 import { tokenize, toBigram } from './tokenize.ts'
+import {
+  APPROVAL_RECORDED_AT,
+  APPROVED_KB_DOCUMENTS,
+  isApprovedVersion,
+} from '../content/approval-manifest.ts'
 
 const SRC = process.env.KB_SOURCE_DIR ?? '/Users/linshen/Downloads/发公司 - 副本'
 
@@ -47,6 +52,7 @@ interface Doc {
 }
 
 const docs: Doc[] = []
+const missingRoots: string[] = []
 
 for (const col of COLLECTIONS) {
   const root = join(SRC, col.dir)
@@ -54,7 +60,7 @@ for (const col of COLLECTIONS) {
   try {
     files = walk(root).sort()
   } catch {
-    console.error(`跳过（目录不存在）：${root}`)
+    missingRoots.push(root)
     continue
   }
   for (const f of files) {
@@ -85,6 +91,16 @@ for (const col of COLLECTIONS) {
   }
 }
 
+if (missingRoots.length > 0) {
+  throw new Error(`知识库源目录不完整，已中止且未修改数据库：${missingRoots.join('；')}`)
+}
+
+const importedIds = new Set(docs.map((d) => d.id))
+const missingApprovedDocs = Object.keys(APPROVED_KB_DOCUMENTS).filter((id) => !importedIds.has(id))
+if (missingApprovedDocs.length > 0) {
+  throw new Error(`已确认版本缺少 ${missingApprovedDocs.length} 篇资料，已中止且未修改数据库`)
+}
+
 /**
  * 近重复聚簇。甲方语料里「老年人腿无力」题材 4 篇、「老人头晕」3 篇，
  * 内容高度重合；不聚簇的话一次检索的前几名会被同一题材占满。
@@ -104,6 +120,24 @@ const WEIGHT = { attributed: 1.0, unattributed: 0.8, ai_flagged: 0.6 } as const
 
 const db = getDb()
 const now = new Date().toISOString()
+const missingCollections = COLLECTIONS.filter(({ id }) =>
+  !db.prepare('SELECT 1 FROM kb_collections WHERE id=?').get(id))
+if (missingCollections.length > 0) {
+  throw new Error('知识库集合尚未初始化，请先运行 pnpm seed；数据库未修改')
+}
+
+interface ExistingReview {
+  id: string
+  content_hash: string
+  review_status: 'pending' | 'approved' | 'rejected'
+  reviewed_by: string | null
+  reviewed_at: string | null
+  enabled: number
+}
+const existing = new Map(
+  (db.prepare(`SELECT id,content_hash,review_status,reviewed_by,reviewed_at,enabled
+    FROM kb_documents`).all() as ExistingReview[]).map((r) => [r.id, r]),
+)
 let chunkCount = 0
 
 db.transaction(() => {
@@ -112,15 +146,37 @@ db.transaction(() => {
 
   const insDoc = db.prepare(`INSERT INTO kb_documents
     (id,collection_id,title,source_path,author,source_note,provenance,review_status,
-     enabled,weight,char_count,content_hash,dup_group,imported_at)
-    VALUES (?,?,?,?,?,?,?,'pending',1,?,?,?,?,?)`)
+     reviewed_by,reviewed_at,enabled,weight,char_count,content_hash,dup_group,imported_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
   const insChunk = db.prepare(`INSERT INTO kb_chunks
     (id,doc_id,seq,heading,text,bigram,char_count) VALUES (?,?,?,?,?,?,?)`)
+  const insAudit = db.prepare(`INSERT OR IGNORE INTO audit_log
+    (id,user_id,action,entity,entity_id,detail,ip,at) VALUES (?,NULL,?,'kb_document',?,?,NULL,?)`)
 
   for (const d of docs) {
+    const previous = existing.get(d.id)
+    const unchanged = previous?.content_hash === d.hash
+    const approvedManifestVersion = isApprovedVersion(APPROVED_KB_DOCUMENTS, d.id, d.hash)
+    const reviewStatus = unchanged
+      ? previous.review_status
+      : approvedManifestVersion ? 'approved' : 'pending'
+    const enabled = unchanged ? previous.enabled : approvedManifestVersion ? 1 : 0
+    const reviewedBy = unchanged ? previous.reviewed_by : null
+    const reviewedAt = unchanged
+      ? previous.reviewed_at
+      : approvedManifestVersion ? APPROVAL_RECORDED_AT : null
+
     insDoc.run(d.id, d.collectionId, d.title, d.sourcePath,
       d.provenance.author ?? null, d.provenance.sourceNote ?? null, d.provenance.tier,
-      WEIGHT[d.provenance.tier], d.text.length, d.hash, groups.get(d.id) ?? d.id, now)
+      reviewStatus, reviewedBy, reviewedAt, enabled, WEIGHT[d.provenance.tier],
+      d.text.length, d.hash, groups.get(d.id) ?? d.id, now)
+    if (!unchanged && approvedManifestVersion) {
+      insAudit.run(`manifest-approval-kb_document-${d.id}`, 'review_approved', d.id,
+        JSON.stringify({ source: 'user-confirmed approval manifest', enabled: true }), APPROVAL_RECORDED_AT)
+    } else if (previous && !unchanged) {
+      insAudit.run(randomUUID(), 'review_reset_content_changed', d.id,
+        JSON.stringify({ previousHash: previous.content_hash, currentHash: d.hash }), now)
+    }
     for (const c of chunkText(d.text)) {
       insChunk.run(`${d.id}-c${c.seq}`, d.id, c.seq, c.heading ?? null,
         c.text, toBigram(`${c.heading ?? ''}\n${c.text}`), c.text.length)

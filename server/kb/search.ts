@@ -57,7 +57,7 @@ export function search(q: string, opts: { topK?: number; collections?: string[] 
     JOIN kb_documents d     ON d.id = c.doc_id
     JOIN kb_collections col ON col.id = d.collection_id
     WHERE kb_chunks_fts MATCH ?
-      AND d.enabled = 1 AND d.review_status <> 'rejected' AND col.enabled = 1${colFilter}
+      AND d.enabled = 1 AND d.review_status = 'approved' AND col.enabled = 1${colFilter}
     ORDER BY raw DESC
     LIMIT 60
   `).all(match, ...(opts.collections ?? [])) as any[]

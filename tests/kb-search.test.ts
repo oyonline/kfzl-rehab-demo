@@ -20,7 +20,7 @@ function addDoc(id: string, title: string, text: string, opts: {
   db.prepare(`INSERT INTO kb_documents
     (id,collection_id,title,source_path,provenance,review_status,enabled,weight,char_count,content_hash,imported_at)
     VALUES (?,?,?,?, 'attributed', ?, ?, 1.0, ?, ?, ?)`)
-    .run(id, COL, title, `/test/${id}.md`, opts.review ?? 'pending', opts.enabled ?? 1, text.length, `hash-${id}`, now)
+    .run(id, COL, title, `/test/${id}.md`, opts.review ?? 'approved', opts.enabled ?? 1, text.length, `hash-${id}`, now)
   db.prepare(`INSERT INTO kb_chunks (id,doc_id,seq,heading,text,bigram,char_count)
               VALUES (?,?,0,NULL,?,?,?)`)
     .run(`${id}-c0`, id, text, toBigram(text), text.length)
@@ -31,6 +31,7 @@ beforeAll(() => {
   db.prepare(`INSERT INTO kb_collections (id,name,enabled) VALUES (?,?,1)`).run(COL, '测试合集')
   addDoc('d-swallow', '吞咽训练要点', '吞咽训练需要端坐位进食，小口慢咽，避免呛咳风险')
   addDoc('d-rejected', '被驳回的资料', '吞咽训练可以随意进行不必端坐', { review: 'rejected' })
+  addDoc('d-pending', '尚未通过的资料', '吞咽训练尚未审核的内容', { review: 'pending' })
   addDoc('d-disabled', '已停用的资料', '吞咽训练相关的停用内容', { enabled: 0 })
 })
 afterAll(() => closeDb())
@@ -45,6 +46,11 @@ describe('中文全文检索', () => {
   it('**被驳回的语料不进检索结果** —— 与审核闸是同一条承诺', () => {
     const hits = search('吞咽训练', { topK: 10 })
     expect(hits.map((h: any) => h.docId)).not.toContain('d-rejected')
+  })
+
+  it('待审语料在通过前不进检索结果', () => {
+    const hits = search('吞咽训练', { topK: 10 })
+    expect(hits.map((h: any) => h.docId)).not.toContain('d-pending')
   })
 
   it('已停用的语料同样排除', () => {

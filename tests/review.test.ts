@@ -14,14 +14,25 @@ afterAll(() => closeDb())
 
 /** 复刻 server/routes/content.ts 的下发口径 */
 const deliveredQA = () =>
-  getDb().prepare(`SELECT id FROM preset_qa WHERE review_status <> 'rejected' ORDER BY sort_order`).all() as any[]
+  getDb().prepare(`SELECT id FROM preset_qa WHERE review_status='approved' ORDER BY sort_order`).all() as any[]
 const deliveredGuidance = () =>
-  getDb().prepare(`SELECT id FROM guidance_articles WHERE review_status <> 'rejected' ORDER BY sort_order`).all() as any[]
+  getDb().prepare(`SELECT id FROM guidance_articles WHERE review_status='approved' ORDER BY sort_order`).all() as any[]
+const deliveredVideoSteps = () =>
+  getDb().prepare(`SELECT st.video_id FROM video_steps st JOIN videos v ON v.id=st.video_id
+    WHERE v.steps_review_status='approved' GROUP BY st.video_id ORDER BY st.video_id`).all() as any[]
 
 describe('审核驳回后停止下发', () => {
-  it('种子内容默认可下发（未审核 ≠ 已驳回）', () => {
-    expect(deliveredQA().length).toBeGreaterThan(0)
-    expect(deliveredGuidance().length).toBeGreaterThan(0)
+  it('种子内容默认已通过审核并可下发', () => {
+    expect(deliveredQA()).toHaveLength(5)
+    expect(deliveredGuidance()).toHaveLength(5)
+    expect(getDb().prepare(`SELECT count(*) c FROM preset_qa WHERE review_status='pending'`).get()).toMatchObject({ c: 0 })
+    expect(getDb().prepare(`SELECT count(*) c FROM guidance_articles WHERE review_status='pending'`).get()).toMatchObject({ c: 0 })
+    expect(getDb().prepare(`SELECT count(*) c FROM videos v WHERE steps_review_status='pending'
+      AND EXISTS (SELECT 1 FROM video_steps st WHERE st.video_id=v.id)`).get()).toMatchObject({ c: 0 })
+    expect(getDb().prepare(`SELECT count(*) c FROM videos v WHERE steps_review_status='approved'
+      AND EXISTS (SELECT 1 FROM video_steps st WHERE st.video_id=v.id)`).get()).toMatchObject({ c: 3 })
+    expect(getDb().prepare(`SELECT count(*) c FROM audit_log WHERE action='review_approved'
+      AND json_extract(detail,'$.source')='user-confirmed approval manifest'`).get()).toMatchObject({ c: 13 })
   })
 
   it('驳回一条预设答案后，它立刻从下发列表消失', () => {
@@ -44,9 +55,25 @@ describe('审核驳回后停止下发', () => {
     expect(deliveredGuidance().map((r) => r.id)).not.toContain(victim)
   })
 
+  it('驳回训练说明后对应步骤立刻停止下发', () => {
+    const before = deliveredVideoSteps()
+    const victim = before[0].video_id
+    getDb().prepare(`UPDATE videos SET steps_review_status='rejected' WHERE id=?`).run(victim)
+
+    expect(deliveredVideoSteps().map((r) => r.video_id)).not.toContain(victim)
+  })
+
+  it('待审内容不会提前下发', () => {
+    const db = getDb()
+    const target = (db.prepare(`SELECT id FROM preset_qa WHERE review_status='approved' LIMIT 1`).get() as any)
+    db.prepare(`UPDATE preset_qa SET review_status='pending' WHERE id=?`).run(target.id)
+    expect(deliveredQA().map((r) => r.id)).not.toContain(target.id)
+    db.prepare(`UPDATE preset_qa SET review_status='approved' WHERE id=?`).run(target.id)
+  })
+
   it('通过审核的内容仍然下发', () => {
     const db = getDb()
-    const target = (db.prepare(`SELECT id FROM preset_qa WHERE review_status='pending' LIMIT 1`).get() as any)
+    const target = (db.prepare(`SELECT id FROM preset_qa WHERE review_status='approved' LIMIT 1`).get() as any)
     if (!target) return // 全被驳回了就跳过
     db.prepare(`UPDATE preset_qa SET review_status='approved' WHERE id=?`).run(target.id)
     expect(deliveredQA().map((r) => r.id)).toContain(target.id)

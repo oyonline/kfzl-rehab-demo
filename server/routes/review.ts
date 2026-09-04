@@ -24,7 +24,7 @@ type Status = (typeof STATUSES)[number]
 
 /** 可审核的三类内容 —— 与 README 里那三个 REVIEW REQUIRED 文件一一对应 */
 const KINDS = {
-  preset_qa: { table: 'preset_qa', label: '咨询预设答案', source: 'src/data/qa.ts' },
+  preset_qa: { table: 'preset_qa', label: '知识库·标准问答', source: 'src/data/qa.ts' },
   guidance: { table: 'guidance_articles', label: '饮食指导', source: 'src/data/guidance.ts' },
   video_steps: { table: 'videos', label: '训练分步说明', source: 'src/data/videoSteps.ts' },
 } as const
@@ -143,10 +143,15 @@ reviewRouter.get('/audit', requireAuth, requireRole('therapist', 'admin'), (req,
     FROM audit_log a LEFT JOIN users u ON u.id = a.user_id
     ORDER BY a.at DESC LIMIT ?`).all(limit) as any[]
   res.json({
-    entries: rows.map((r) => ({
-      id: r.id, action: r.action, entity: r.entity, entityId: r.entity_id,
-      at: r.at, who: r.who ?? '（已删除用户）',
-      detail: (() => { try { return JSON.parse(r.detail) } catch { return {} } })(),
-    })),
+    entries: rows.map((r) => {
+      let detail: Record<string, unknown> = {}
+      try { detail = JSON.parse(r.detail) } catch { /* 旧日志可能不是合法 JSON */ }
+      const userConfirmed = typeof detail.source === 'string' && detail.source.startsWith('user-confirmed')
+      return {
+        id: r.id, action: r.action, entity: r.entity, entityId: r.entity_id,
+        at: r.at, who: r.who ?? (userConfirmed ? '用户确认' : '系统记录'),
+        detail,
+      }
+    }),
   })
 })
