@@ -5,6 +5,7 @@ import { usePatientData, useContent } from '../../data/context'
 import { createEscalation, effectiveStatus, markAllGuidanceRead, setCheckIn, todayCheckIns, useDemoState } from '../../store/store'
 import { IconActivity, IconAlert, IconCheck, IconClock, IconHeart, IconPill, IconPlay, IconShield } from '../../components/Icons'
 import { Lines } from '../../components/Lines'
+import { HomeEntries } from './HomeEntries'
 
 export function TodayView() {
   const { patient, taskDefs, therapist } = usePatientData()
@@ -43,6 +44,9 @@ export function TodayView() {
 
   return (
     <div className="stack">
+      {/* 门户式导航：顶栏 8 项链接撤除后，功能入口改在这里一屏呈现 */}
+      <HomeEntries />
+
       <section className="hero">
         <Ring done={done} total={total} />
         <div style={{ position: 'relative', zIndex: 1 }}>

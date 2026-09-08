@@ -392,10 +392,32 @@
 .nav a:hover { background: var(--surface-2); color: var(--ink); }
 .nav a.active { background: var(--green-100); color: var(--green-700); font-weight: 650; }
 
-/* 家属端 2026-08-31 起扩到 8 项（含「个性化康复计划与提醒」「宣传册·政策·专家」等长标签），
-   紧凑版式防止 1440 宽以下顶栏溢出换行 */
-.nav-tight { gap: 1px; margin-left: 18px; }
-.nav-tight a { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+/* 家属端门户式导航（2026-09）：顶栏 8 项链接撤除，功能入口改为首页宫格。
+   八项名称与顺序为 2026-09-03 用户裁决，调整须连 HomeEntries.tsx 一起对齐 */
+.entry-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.entry-card {
+  display: grid; justify-items: center; gap: 9px;
+  padding: 16px 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  text-align: center;
+  transition: border-color .15s, background .15s;
+}
+.entry-card:hover { border-color: var(--teal-300); background: var(--teal-50); }
+.entry-card.active { border-color: var(--teal-600); background: var(--teal-50); }
+.entry-ico {
+  display: grid; place-items: center;
+  width: 46px; height: 46px; border-radius: var(--r-pill);
+  background: var(--teal-50); color: var(--teal-700);
+}
+.entry-card.active .entry-ico { background: var(--teal-700); color: #fff; }
+.entry-name { font-size: var(--t-base); font-weight: 600; color: var(--ink); line-height: 1.35; }
+
+/* 二级页顶部「返回首页」与其所在内容列。
+   按钮本体复用 .btn.btn-lg（主按钮规格：深青绿实心胶囊），醒目且不新造样式 */
+.content-col { display: grid; gap: 20px; align-content: start; min-width: 0; }
+.back-home { justify-self: start; }
 
 /* ---------------- 咨询对话 ---------------- */
 

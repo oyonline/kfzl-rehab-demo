@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { authFetch, currentSession, signOut } from '../../auth/auth'
 import { ContentProvider, PatientProvider, usePatientData } from '../../data/context'
 
 import { useDemoLoaded, useDemoState } from '../../store/store'
-import { IconAlert, IconCaret, IconFile, IconLeaf } from '../../components/Icons'
+import { IconAlert, IconCaret, IconFile, IconHome, IconLeaf } from '../../components/Icons'
 import { ReminderBell } from '../../components/ReminderBell'
 import { ReminderBanner } from '../../components/ReminderBanner'
 import { ProfileDrawer } from '../../components/ProfileDrawer'
@@ -21,17 +21,6 @@ import { ResourceDetailView } from './ResourceDetailView'
 import { ForumView } from './ForumView'
 import { ForumPostView } from './ForumPostView'
 import '../../styles/app.css'
-
-const NAV = [
-  { to: '/patient', label: '个性化康复计划与提醒', end: true },
-  { to: '/patient/chat', label: '智能对话咨询' },
-  { to: '/patient/videos', label: '康复训练视频库' },
-  { to: '/patient/calendar', label: '打卡日历' },
-  { to: '/patient/guidance', label: '饮食指导' },
-  { to: '/patient/vitals', label: '健康数据' },
-  { to: '/patient/resources', label: '宣传册·政策·专家' },
-  { to: '/patient/forum', label: '家属互助论坛' },
-]
 
 /**
  * 家属端外壳。
@@ -88,6 +77,8 @@ export function PatientShell() {
 function PatientShellInner() {
   const { patient, careAlerts } = usePatientData()
   const nav = useNavigate()
+  const { pathname } = useLocation()
+  const atHome = pathname === '/patient'
   const session = currentSession()
   const [profileOpen, setProfileOpen] = useState(false)
   const state = useDemoState()
@@ -119,14 +110,7 @@ function PatientShellInner() {
               <div className="brand-sub">居家康复智能助手</div>
             </span>
           </div>
-          {/* 8 项导航超出常规密度，用紧凑版式避免顶栏溢出换行 */}
-          <nav className="nav nav-tight">
-            {NAV.map((n) => (
-              <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'active' : '')}>
-                {n.label}
-              </NavLink>
-            ))}
-          </nav>
+          {/* 2026-09 门户式改版：顶栏 8 项链接撤除，功能入口改为首页宫格（HomeEntries） */}
         </div>
         <div className="topbar-right">
           {/* 消息中心：今日提醒记录 + 未读留言数。任何页面都点得到 */}
@@ -212,20 +196,28 @@ function PatientShellInner() {
           </div>
         </aside>
 
-        <Routes>
-          <Route index element={<TodayView />} />
-          <Route path="videos" element={<VideoLibraryView />} />
-          <Route path="videos/:id" element={<VideoDetailView />} />
-          <Route path="chat" element={<ChatView />} />
-          <Route path="calendar" element={<CheckinCalendar />} />
-          <Route path="vitals" element={<VitalsView />} />
-          <Route path="guidance" element={<GuidanceView />} />
-          <Route path="guidance/:id" element={<GuidanceDetailView />} />
-          <Route path="resources" element={<ResourcesView />} />
-          <Route path="resources/:kind/:id" element={<ResourceDetailView />} />
-          <Route path="forum" element={<ForumView />} />
-          <Route path="forum/:id" element={<ForumPostView />} />
-        </Routes>
+        {/* 内容列：二级页顶部给一个固定的「返回首页」，门户化后这是唯一的全局回跳入口 */}
+        <div className="content-col">
+          {!atHome && (
+            <Link to="/patient" className="btn btn-lg back-home">
+              <IconHome size={18} /> 返回首页
+            </Link>
+          )}
+          <Routes>
+            <Route index element={<TodayView />} />
+            <Route path="videos" element={<VideoLibraryView />} />
+            <Route path="videos/:id" element={<VideoDetailView />} />
+            <Route path="chat" element={<ChatView />} />
+            <Route path="calendar" element={<CheckinCalendar />} />
+            <Route path="vitals" element={<VitalsView />} />
+            <Route path="guidance" element={<GuidanceView />} />
+            <Route path="guidance/:id" element={<GuidanceDetailView />} />
+            <Route path="resources" element={<ResourcesView />} />
+            <Route path="resources/:kind/:id" element={<ResourceDetailView />} />
+            <Route path="forum" element={<ForumView />} />
+            <Route path="forum/:id" element={<ForumPostView />} />
+          </Routes>
+        </div>
       </main>
 
       {/* 推送浮层挂在外壳上：它浮在所有页面之上，不属于任何一页的内容流 */}
