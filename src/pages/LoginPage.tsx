@@ -23,7 +23,7 @@ interface Props {
  */
 const DEV_PREFILL: Record<Role, { username: string; password: string }> = {
   family: { username: 'chen', password: '123456' },
-  therapist: { username: 'xiaoting', password: '123456' },
+  therapist: { username: 'zhou', password: '123456' },
 }
 
 /** 账号 + 密码登录，无验证码、无扫码、无第三方授权 */

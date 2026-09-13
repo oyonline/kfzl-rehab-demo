@@ -16,7 +16,7 @@ describe('种子数据', () => {
   it('灌出两个可登录账号', () => {
     const rows = getDb().prepare('SELECT username, role, status FROM users ORDER BY username').all() as any[]
     expect(rows.map((r) => r.username)).toContain('chen')
-    expect(rows.map((r) => r.username)).toContain('xiaoting')
+    expect(rows.map((r) => r.username)).toContain('zhou')
     // 停用账号登不进来，见 requireAuth 每次回库核 status
     expect(rows.every((r) => r.status === 'active')).toBe(true)
   })
@@ -34,7 +34,7 @@ describe('种子数据', () => {
 describe('行级权限 patient_members', () => {
   it('家属与康复师都被授权到 p-001', () => {
     expect(visiblePatientIds('u-family-chen', 'family')).toContain('p-001')
-    expect(visiblePatientIds('u-th-xiaoting', 'therapist')).toContain('p-001')
+    expect(visiblePatientIds('u-th-zhou', 'therapist')).toContain('p-001')
   })
 
   it('未授权用户看不到任何患者 —— 不是「看到空档案」而是「没有这一行」', () => {
@@ -49,7 +49,7 @@ describe('行级权限 patient_members', () => {
                 VALUES ('p-test-002','测试患者','女','80 岁','active',?,?)`).run(now, now)
 
     // 康复师能看到 p-001，但看不到没授权的 p-test-002
-    const visible = visiblePatientIds('u-th-xiaoting', 'therapist')
+    const visible = visiblePatientIds('u-th-zhou', 'therapist')
     expect(visible).toContain('p-001')
     expect(visible).not.toContain('p-test-002')
   })

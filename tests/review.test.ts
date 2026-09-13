@@ -92,9 +92,9 @@ describe('审计日志', () => {
     const now = new Date().toISOString()
     db.prepare(`INSERT INTO audit_log (id,user_id,action,entity,entity_id,detail,ip,at)
                 VALUES (?,?,?,?,?,?,?,?)`)
-      .run('a-test-1', 'u-th-xiaoting', 'review_rejected', 'preset_qa', 'q-1', '{}', '127.0.0.1', now)
+      .run('a-test-1', 'u-th-zhou', 'review_rejected', 'preset_qa', 'q-1', '{}', '127.0.0.1', now)
     const row = db.prepare(`SELECT * FROM audit_log WHERE id='a-test-1'`).get() as any
-    expect(row.user_id).toBe('u-th-xiaoting')
+    expect(row.user_id).toBe('u-th-zhou')
     expect(row.action).toBe('review_rejected')
     expect(row.at).toBe(now)
   })

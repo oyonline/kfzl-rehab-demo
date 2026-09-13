@@ -62,7 +62,7 @@ const seed = db.transaction(() => {
       display: '陈女士（女儿）', title: null },
     { id: 'u-family-zhao', username: 'zhao', pw: '123456', role: 'family',
       display: '赵福安爷爷', title: null },
-    { id: 'u-th-xiaoting', username: 'xiaoting', pw: '123456', role: 'therapist',
+    { id: 'u-th-zhou', username: 'zhou', pw: '123456', role: 'therapist',
       display: therapist.name, title: therapist.title },
   ]
   const insUser = db.prepare(`INSERT INTO users
@@ -93,12 +93,12 @@ const seed = db.transaction(() => {
      avatar,primary_therapist_id,origin,status,created_at,updated_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'active',?,?)`)
     .run(p.id, p.name, p.gender, p.ageBand, p.heightCm, p.weightKg, p.livingSituation,
-         p.psychosocial ?? null, p.communication, p.avatar, 'u-th-xiaoting', p.origin, now, now)
+         p.psychosocial ?? null, p.communication, p.avatar, 'u-th-zhou', p.origin, now, now)
 
   const insMember = db.prepare(`INSERT INTO patient_members
     (patient_id,user_id,relation,access,granted_at) VALUES (?,?,?,?,?)`)
   insMember.run(p.id, 'u-family-chen', p.caregiver.relation, 'owner', now)
-  insMember.run(p.id, 'u-th-xiaoting', '主管康复师', 'primary', now)
+  insMember.run(p.id, 'u-th-zhou', '主管康复师', 'primary', now)
 
   db.prepare(`INSERT INTO patient_diagnosis
     (patient_id,stroke_type,onset_date,stage,comorbidities) VALUES (?,?,?,?,?)`)
@@ -125,8 +125,8 @@ const seed = db.transaction(() => {
     (id,name,gender,age_band,living_situation,psychosocial,communication,avatar,
      primary_therapist_id,origin,status,created_at,updated_at)
     VALUES (?,?,'男','','','','','',?,'synthetic','active',?,?)`)
-    .run(zhaoId, '赵福安爷爷', 'u-th-xiaoting', now, now)
-  insMember.run(zhaoId, 'u-th-xiaoting', '主管康复师', 'primary', now)
+    .run(zhaoId, '赵福安爷爷', 'u-th-zhou', now, now)
+  insMember.run(zhaoId, 'u-th-zhou', '主管康复师', 'primary', now)
   insMember.run(zhaoId, 'u-family-zhao', '本人', 'owner', now)
   db.prepare("INSERT INTO patient_diagnosis (patient_id,stage,comorbidities) VALUES (?,'','[]')").run(zhaoId)
   db.prepare("INSERT INTO patient_function (patient_id,risks,care_alerts) VALUES (?,'[]','[]')").run(zhaoId)
