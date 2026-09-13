@@ -62,7 +62,7 @@ server/
   seed/run.ts           种子数据
 scripts/
   dev-build.sh          预览 build（安装依赖）
-  dev-run.sh            预览 run（Vite dev server）
+  dev-run.sh            预览 run（同进程组先起 Express 5099 再 exec Vite）
   build.sh              部署 build（Vite 构建产物）
   run.sh                部署 run（起 Express）
 ```
@@ -113,7 +113,10 @@ pnpm dev        # Vite，5173，把 /api 代理到 5099
 对不上，直接 `pnpm server` 会让所有接口请求连不上。不用 5000 是因为 macOS
 AirPlay 占着它，且 `.preview` 把 5000 分给了 Vite。
 
-- 预览：`scripts/dev-build.sh` + `scripts/dev-run.sh`（端口从 `.preview` 读取，`expose_port = 5000`）
+- 预览：`scripts/dev-build.sh` + `scripts/dev-run.sh`（端口从 `.preview` 读取，`expose_port = 5000`）。
+  dev-run 现在会**同时拉起后端**：`PORT=API_PORT pnpm run server`（后台，日志 /tmp/preview-server.log）
+  再 exec Vite —— 预览链路必须有 /api，否则登录等接口全部连接被拒、前端报
+  「无法连接登录服务」（2026-09-13 修）。
 - 部署：`scripts/build.sh` + `scripts/run.sh`（Vite build → Express 托管，单进程同源）
 - 首次启动自动建表、跑迁移、灌种子（仅 `users` 表为空时）
 
