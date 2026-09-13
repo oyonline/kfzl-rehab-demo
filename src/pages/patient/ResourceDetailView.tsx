@@ -2,11 +2,13 @@ import { Link, useParams } from 'react-router-dom'
 import { InlineRich } from '../../components/RichText'
 import { BROCHURE } from '../../data/resources'
 import { EXPERTS, EXPERT_BOOKING_CHANNELS, EXPERT_NOTICE, POLICIES } from '../../data/resources'
+import { maskPlaces } from '../../lib/placeMask'
 import { IconAlert, IconChevron } from '../../components/Icons'
 
 /**
  * 宣传册 / 政策 / 专家 的通用详情页 —— /patient/resources/:kind/:id。
  * kind: brochure | policy | expert
+ * 出口文字统一过 maskPlaces 展示层打码（src/lib/placeMask.ts），数据原文不动。
  */
 export function ResourceDetailView() {
   const { kind, id } = useParams()
@@ -20,16 +22,16 @@ export function ResourceDetailView() {
         <Article title={s.title} summary={s.summary}>
           {s.blocks.map((b, i) => (
             <section className="card card-pad" key={i}>
-              {b.heading && <div className="eyebrow" style={{ marginBottom: 10 }}>{b.heading}</div>}
+              {b.heading && <div className="eyebrow" style={{ marginBottom: 10 }}>{maskPlaces(b.heading)}</div>}
               {b.paragraphs?.map((p, j) => (
-                <p style={{ margin: '0 0 10px', lineHeight: 1.8 }} key={j}><InlineRich text={p} /></p>
+                <p style={{ margin: '0 0 10px', lineHeight: 1.8 }} key={j}><InlineRich text={maskPlaces(p)} /></p>
               ))}
               {b.steps && (
                 <ol className="steps">
                   {b.steps.map((st, j) => (
                     <li key={j}>
                       <span className="steps-n num">{j + 1}</span>
-                      <span className="steps-d" style={{ color: 'var(--ink)', paddingTop: 2 }}><InlineRich text={st} /></span>
+                      <span className="steps-d" style={{ color: 'var(--ink)', paddingTop: 2 }}><InlineRich text={maskPlaces(st)} /></span>
                     </li>
                   ))}
                 </ol>
@@ -37,13 +39,13 @@ export function ResourceDetailView() {
               {b.bullets && (
                 <ul style={{ margin: 0, paddingLeft: 20, display: 'grid', gap: 8 }}>
                   {b.bullets.map((li, j) => (
-                    <li style={{ lineHeight: 1.7 }} key={j}><InlineRich text={li} /></li>
+                    <li style={{ lineHeight: 1.7 }} key={j}><InlineRich text={maskPlaces(li)} /></li>
                   ))}
                 </ul>
               )}
             </section>
           ))}
-          {s.note && <Note text={s.note} />}
+          {s.note && <Note text={maskPlaces(s.note)} />}
         </Article>
       </div>
     )
@@ -55,17 +57,17 @@ export function ResourceDetailView() {
     return (
       <div className="stack">
         <Crumb parent="政策福利" />
-        <Article title={p.title} summary={p.summary}>
+        <Article title={maskPlaces(p.title)} summary={maskPlaces(p.summary)}>
           <section className="card card-pad">
             <div className="card-note" style={{ marginBottom: 14, display: 'grid', gap: 4 }}>
-              <span>来源：{p.source}{p.docNo ? ` · ${p.docNo}` : ''} · 发布：{p.date}</span>
+              <span>来源：{maskPlaces(p.source)}{p.docNo ? ` · ${maskPlaces(p.docNo)}` : ''} · 发布：{p.date}</span>
               {p.url
                 ? <span style={{ wordBreak: 'break-all' }}>原文链接：<a href={p.url} target="_blank" rel="noreferrer" style={{ color: 'var(--green-700)' }}>{p.url}</a></span>
                 : <span>原文链接：甲方内部整理资料，未附公开链接</span>}
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {p.body.map((t, i) => (
-                <p style={{ margin: 0, lineHeight: 1.8 }} key={i}><InlineRich text={t} /></p>
+                <p style={{ margin: 0, lineHeight: 1.8 }} key={i}><InlineRich text={maskPlaces(t)} /></p>
               ))}
             </div>
           </section>
@@ -83,21 +85,21 @@ export function ResourceDetailView() {
     return (
       <div className="stack">
         <Crumb parent="专家资源" />
-        <Article title={`${e.name} · ${e.hospital}`} summary={e.department}>
+        <Article title={`${e.name} · ${maskPlaces(e.hospital)}`} summary={e.department}>
           <section className="card card-pad">
             <div style={{ display: 'grid', gap: 10 }}>
               <p style={{ margin: 0, lineHeight: 1.8 }}>
-                {e.name}，{e.hospital} {e.department}。所在医院为深圳本地三甲医院，可通过官方渠道预约康复医学科门诊。
+                {e.name}，{maskPlaces(e.hospital)} {e.department}。所在医院为{maskPlaces('深圳')}本地三甲医院，可通过官方渠道预约康复医学科门诊。
               </p>
               <div>
                 <div className="eyebrow" style={{ marginBottom: 8 }}>官方预约渠道</div>
                 <ul style={{ margin: 0, paddingLeft: 20, display: 'grid', gap: 8 }}>
-                  {EXPERT_BOOKING_CHANNELS.map((c) => <li style={{ lineHeight: 1.7 }} key={c}>{c}</li>)}
+                  {EXPERT_BOOKING_CHANNELS.map((c) => <li style={{ lineHeight: 1.7 }} key={c}>{maskPlaces(c)}</li>)}
                 </ul>
               </div>
             </div>
           </section>
-          <Note text={EXPERT_NOTICE} />
+          <Note text={maskPlaces(EXPERT_NOTICE)} />
         </Article>
       </div>
     )

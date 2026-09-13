@@ -78,6 +78,11 @@ scripts/
   模型白名单 `LLM_MODELS` + 默认 `DEFAULT_LLM_MODEL`，均经 `probe-models.ts` 实测；
   前端模型选择器在 `src/pages/patient/ChatView.tsx` 的 `LLM_OPTIONS`，
   **与服务端白名单一一对应，改动须两侧同步**
+- **地名打码**：`src/lib/placeMask.ts` —— 「宣传册·政策·专家」栏目展示层词表替换
+  （省市区全打；医院名/来源/标题/摘要同打；两所大学附属医院走整名映射）。
+  `ResourcesView` / `ResourceDetailView` 渲染时统一套用，`resources.ts` 甲方原文不动；
+  `tests/place-mask.test.ts` 断言栏目全量数据打码后无地名残留。口径外：「大湾区」「港澳」
+  区域概念词未打；AI 咨询回答中的地名本期不处理。
 
 ## 路由结构
 

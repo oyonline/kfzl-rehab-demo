@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { BROCHURE, EXPERTS, POLICIES, POLICY_CATEGORIES } from '../../data/resources'
+import { maskPlaces } from '../../lib/placeMask'
 import { IconChevron, IconFile, IconShield, IconUser } from '../../components/Icons'
 
 /**
@@ -10,6 +11,8 @@ import { IconChevron, IconFile, IconShield, IconUser } from '../../components/Ic
  * - 政策：模块七 13 篇，按甲方交付的四个文件夹分类，
  *   其中 10 篇原文自带 AI 生成标注，详情页如实透出；
  * - 专家：需求书 3.8 的 6 位深圳专家（只有姓名与医院是甲方数据）。
+ *
+ * 出口文字统一过 maskPlaces 展示层打码（src/lib/placeMask.ts），数据原文不动。
  */
 export function ResourcesView() {
   return (
@@ -24,7 +27,7 @@ export function ResourcesView() {
         <div className="eyebrow">宣传册·政策·专家</div>
         <h2 className="card-title">服务介绍与政策福利查询</h2>
         <p className="card-note" style={{ marginTop: 6 }}>
-          居家康复服务说明、深圳本地政策福利与三甲医院康复科专家预约渠道
+          {maskPlaces('居家康复服务说明、深圳本地政策福利与三甲医院康复科专家预约渠道')}
         </p>
       </section>
 
@@ -38,8 +41,8 @@ export function ResourcesView() {
             <Link className="grow" to={`/patient/resources/brochure/${s.id}`} key={s.id}>
               <span className="grow-ico"><IconFile size={19} /></span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="grow-t">{s.title}</span>
-                <span className="grow-s">{s.summary}</span>
+                <span className="grow-t">{maskPlaces(s.title)}</span>
+                <span className="grow-s">{maskPlaces(s.summary)}</span>
               </span>
               <span className="grow-go"><IconChevron /></span>
             </Link>
@@ -63,11 +66,11 @@ export function ResourcesView() {
                   <Link className="grow" to={`/patient/resources/policy/${p.id}`} key={p.id}>
                     <span className="grow-ico"><IconShield size={19} /></span>
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span className="grow-t">{p.title}</span>
-                      <span className="grow-s">{p.summary}</span>
+                      <span className="grow-t">{maskPlaces(p.title)}</span>
+                      <span className="grow-s">{maskPlaces(p.summary)}</span>
                       <span className="grow-m">
                         <span className="chip num">{p.date.slice(0, 7)}</span>
-                        <span className="chip">{p.source}</span>
+                        <span className="chip">{maskPlaces(p.source)}</span>
                       </span>
                     </span>
                     <span className="grow-go"><IconChevron /></span>
@@ -85,14 +88,14 @@ export function ResourcesView() {
       {/* —— 专家资源 —— */}
       <section className="stack">
         <div className="eyebrow" style={{ marginBottom: -6, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconUser size={13} /> 康复专家资源（深圳三甲医院康复科，{EXPERTS.length} 位）
+          <IconUser size={13} /> 康复专家资源（{maskPlaces('深圳三甲医院康复科')}，{EXPERTS.length} 位）
         </div>
         <div className="glist">
           {EXPERTS.map((e) => (
             <Link className="grow" to={`/patient/resources/expert/${e.id}`} key={e.id}>
               <span className="grow-ico"><IconUser size={19} /></span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="grow-t">{e.name}<span className="card-note" style={{ marginLeft: 10 }}>{e.hospital}</span></span>
+                <span className="grow-t">{e.name}<span className="card-note" style={{ marginLeft: 10 }}>{maskPlaces(e.hospital)}</span></span>
                 <span className="grow-s">{e.department}</span>
               </span>
               <span className="grow-go"><IconChevron /></span>
