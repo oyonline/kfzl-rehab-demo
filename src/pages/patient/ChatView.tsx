@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FALLBACK_ANSWER, type PresetQA } from '../../data/qa'
 import type { Patient, TaskDef, Therapist } from '../../data/types'
-import { useContent, usePatientData } from '../../data/context'
+import { usePatientData } from '../../data/context'
+import {
+  matchPatientQa,
+  patientQaForId,
+  patientQuestionExampleForId,
+} from '../../data/patientQa'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { authFetch } from '../../auth/auth'
 import { IconChat, IconSend, IconUser } from '../../components/Icons'
@@ -84,8 +89,8 @@ function matchPresetQuestion(input: string, presets: PresetQA[]): PresetQA | nul
     .replace(/[\s，。！？、；：,.!?;:'"“”‘’（）()《》【】]+/g, '')
 
   const text = normalize(input)
-  const exact = presets.find((q) => normalize(q.question) === text)
-  if (exact) return exact
+  const configured = matchPatientQa(input, presets)
+  if (configured) return configured
 
   const byId = (id: string) => presets.find((q) => q.id === id) ?? null
   const hasAny = (words: string[]) => words.some((word) => text.includes(word))
@@ -274,17 +279,9 @@ export function splitDualSource(text: string): { external?: string; team: string
 
 export function ChatView() {
   const { planConfirmedOn, patient, taskDefs, therapist } = usePatientData()
-  const { presetQA: sourcePresetQA } = useContent()
-  // 已审核内容源保持原字节与哈希不变；患者改名只在展示层替换称呼。
-  // 其他患者不能套用林秀兰的个体化预设问答，只走各自档案上下文或转人工。
-  const displayQa = (q: PresetQA): PresetQA => ({
-    ...q,
-    basis: q.basis.map((s) => s.replaceAll('林奶奶', patient.name)),
-    external: q.external?.map((s) => s.replaceAll('林奶奶', patient.name)),
-    answer: q.answer.map((s) => s.replaceAll('林奶奶', patient.name)),
-    escalateHint: q.escalateHint?.replaceAll('林奶奶', patient.name),
-  })
-  const PRESET_QA = patient.id === 'p-001' ? sourcePresetQA.map(displayQa) : []
+  // 只允许显式登记的患者使用其专属问答；未知患者不复用其他病例内容。
+  const PRESET_QA = patientQaForId(patient.id)
+  const questionExample = patientQuestionExampleForId(patient.id)
   const patientFallback = {
     ...FALLBACK_ANSWER,
     basis: FALLBACK_ANSWER.basis.map((s) => s.replaceAll('林奶奶', patient.name)),
@@ -612,7 +609,7 @@ export function ChatView() {
                 setDraft('')
               }
             }}
-            placeholder="输入您想问的问题…"
+            placeholder={questionExample ? `例如：${questionExample}` : '输入您想问的问题…'}
           />
           <button
             className="btn btn-lg"

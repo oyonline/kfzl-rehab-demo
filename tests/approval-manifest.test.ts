@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { PRESET_QA } from '../src/data/qa.ts'
+import {
+  DENGYI_QA,
+  LIN_XIULAN_STARTER_QA,
+  ZHAO_FUAN_ONBOARDING_QA,
+} from '../src/data/patientQa.ts'
 import { GUIDANCE } from '../src/data/guidance.ts'
 import { VIDEO_STEPS } from '../src/data/videoSteps.ts'
 import {
   APPROVED_GUIDANCE,
   APPROVED_KB_DOCUMENTS,
+  APPROVED_PATIENT_QA,
   APPROVED_PRESET_QA,
   APPROVED_VIDEO_STEPS,
   hashApprovedContent,
@@ -30,5 +36,12 @@ describe('已确认内容版本清单', () => {
       original.id,
       hashApprovedContent(changed),
     )).toBe(false)
+  })
+
+  it('锁定用户确认提交的 13 条扩充版患者专属问答', () => {
+    const patientQa = [...DENGYI_QA, ...LIN_XIULAN_STARTER_QA, ...ZHAO_FUAN_ONBOARDING_QA]
+    expect(patientQa.filter((item) =>
+      isApprovedVersion(APPROVED_PATIENT_QA, item.id, hashApprovedContent(item)))).toHaveLength(13)
+    expect(Object.keys(APPROVED_PATIENT_QA)).toHaveLength(13)
   })
 })

@@ -21,6 +21,8 @@
 export interface PresetQA {
   id: string
   question: string
+  /** 任一组内的词全部命中时，视为同一问题意图。 */
+  matchTerms?: string[][]
   /** 回答依据，展示在答案下方 */
   basis: string[]
   /**

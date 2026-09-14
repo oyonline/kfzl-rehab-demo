@@ -16,6 +16,23 @@ export const APPROVED_PRESET_QA: Readonly<Record<string, string>> = {
   meals: 'a117c8a8013742b2a50da2ffc58da20b71612506a85a76e83e45fbd39933da87',
 }
 
+/** 2026-09-14 用户确认授权启用的三位患者专属咨询问答。 */
+export const APPROVED_PATIENT_QA: Readonly<Record<string, string>> = {
+  'dy-hand': '39bc5c930972b6ee8a346f242910c60f76f54b335cf8fe67b4e0365219027304',
+  'dy-bridge': 'e3879415d38b4ee158ecce4cc1658157e2f92aa789aece69650a1e44bdb68059',
+  'dy-cognition': '5de7cba178bb9bbcc37e722f36264d420d7a389825e9ff0d6e6d3dba65bcd862',
+  'dy-swallow': '0b16de9ada94d814d156ced156a6f7a7a8f9212d76800783588d8bd4f5a2e7ee',
+  'dy-monitor': 'ffc45ab07844917e6029f4135694fd945ee6e497a0e11306ee3634f3af9b40fe',
+  'dy-checkin': 'bbf5ecd05f8987e66d96503abf02daa3fc06e9ac05620aad92d9dc289cced667',
+  'lin-start': '4abd981c90a861b736a9a5e5101964aae33690aeb993d87a521aeb606cf43cdf',
+  'lin-tired': '20da2f99308e58a44b7631291d4396713e919596262877ca1a4edb101b9f93fc',
+  'lin-checkin': 'cd97d8b0e4b31d016d2dce45af573a8652ea05989253b17741dbbc9f6ad7d379',
+  'lin-unwell': '8faf5c1b40e8550ec6fdf93ef4e61b1f17005d61c2d81fc14720615b332dcfd1',
+  'zhao-next': 'e7148b42f071d69fd9078179512edfc068802d88028fb178dddd417550bf366d',
+  'zhao-no-plan': '5e637d5cf381d2853d6b71aa7683dbe66552731a35e751ebf1bb65ff381013e2',
+  'zhao-start': '4656f18b795fd2214845f952bbb9080cfc7620ea342862b7fdeaf35a671ea503',
+}
+
 export const APPROVED_GUIDANCE: Readonly<Record<string, string>> = {
   feeding: 'a1be5b3495e145fe1873552f6ba58bab6187117223f2b87c8597c551dc889258',
   texture: '6faf450b093f9332f974ffcedaeb3ef1d9035c50cb4d7d2a8090c0de3dab4b0b',
