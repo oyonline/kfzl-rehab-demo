@@ -64,7 +64,12 @@ patientsRouter.get('/', requireAuth, (req, res) => {
     LEFT JOIN patient_goals g     ON g.patient_id = p.id
     LEFT JOIN patient_members m   ON m.patient_id = p.id AND m.user_id = ?
     WHERE p.id IN (${ph}) AND p.status = 'active'
-    ORDER BY p.created_at
+    ORDER BY CASE p.id
+      WHEN 'p-001' THEN 0
+      WHEN 'p-dengyi' THEN 1
+      WHEN 'p-zhao-grandpa' THEN 2
+      ELSE 3
+    END, p.created_at, p.id
   `).all(today, today, req.user!.sub, ...ids) as any[]
 
   // 血压超标要按安全范围逐条判，SQL 里写不干净，取出来用同一个判定函数 ——

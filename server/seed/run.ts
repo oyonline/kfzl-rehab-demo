@@ -25,6 +25,7 @@ import { VIDEO_STEPS } from '../../src/data/videoSteps.ts'
 import { CARE_ALERTS, GUIDANCE } from '../../src/data/guidance.ts'
 import { PRESET_QA } from '../../src/data/qa.ts'
 import { DAILY_REMINDERS } from '../../src/data/reminders.ts'
+import { DEMO_PATIENTS, DEMO_RICH_GUIDANCE_TEXTS, demoTasksFor } from '../../src/data/demoPatients.ts'
 import {
   APPROVAL_RECORDED_AT,
   APPROVED_GUIDANCE,
@@ -69,6 +70,10 @@ const seed = db.transaction(() => {
       display: '邓仪家属', title: null },
     { id: 'u-th-zhou', username: 'zhou', pw: '123456', role: 'therapist',
       display: therapist.name, title: therapist.title },
+    ...DEMO_PATIENTS.map((p) => ({
+      id: `u-family-${p.id.slice(2)}`, username: p.username, pw: '123456', role: 'family',
+      display: p.caregiverName, title: null,
+    })),
   ]
   const insUser = db.prepare(`INSERT INTO users
     (id, username, password_hash, password_salt, role, display_name, title, status, created_at, updated_at)
@@ -175,6 +180,43 @@ const seed = db.transaction(() => {
     VALUES (?,?,?,?,?)`)
     .run(d.id, d.caregiver.name, d.caregiver.relation, J(d.assistiveDevices), J(d.pastHistory))
 
+  /* 15 名分层虚构患者：完整 5、起步 5、未评估 5 */
+  const insDemoPatient = db.prepare(`INSERT INTO patients
+    (id,name,gender,age_band,living_situation,psychosocial,communication,avatar,
+     primary_therapist_id,origin,status,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,'','u-th-zhou','synthetic','active',?,?)`)
+  const insDemoDiagnosis = db.prepare(`INSERT INTO patient_diagnosis
+    (patient_id,stroke_type,stage,comorbidities) VALUES (?,?,?,'[]')`)
+  const insDemoFunction = db.prepare(`INSERT INTO patient_function
+    (patient_id,affected_side,mobility,swallowing,cognition,risks,care_alerts)
+    VALUES (?,?,?,'待持续观察','待持续观察','[]','[]')`)
+  const insDemoGoals = db.prepare(`INSERT INTO patient_goals
+    (patient_id,short_term,long_term,next_review_date,plan_status,plan_date,plan_items,plan_source_note)
+    VALUES (?,?,?,? ,?,?,?,?)`)
+  const insDemoContact = db.prepare(`INSERT INTO patient_contact
+    (patient_id,caregiver_name,caregiver_relation,assistive_devices,past_history)
+    VALUES (?,?,?,'[]','[]')`)
+  for (const item of DEMO_PATIENTS) {
+    const isUnassessed = item.tier === 'unassessed'
+    insDemoPatient.run(item.id, item.name, item.gender, item.ageBand,
+      isUnassessed ? '基础居住与照护信息待补充' : '与家属共同居住',
+      isUnassessed ? '' : '情绪与配合情况持续观察', item.focus, now, now)
+    insMember.run(item.id, `u-family-${item.id.slice(2)}`, '家属', 'owner', now)
+    insMember.run(item.id, 'u-th-zhou', '主管康复师', 'primary', now)
+    insDemoDiagnosis.run(item.id, item.strokeType, item.stage)
+    if (isUnassessed) {
+      db.prepare("INSERT INTO patient_function (patient_id,risks,care_alerts) VALUES (?,'[]','[]')").run(item.id)
+      insDemoGoals.run(item.id, '[]', '[]', null, 'none', null, '[]', '尚未完成首次评估，不生成训练计划。')
+    } else {
+      insDemoFunction.run(item.id, item.affectedSide, item.focus)
+      const tasks = demoTasksFor(item)
+      insDemoGoals.run(item.id, J([item.focus]), J(item.tier === 'rich' ? ['保持稳定执行并持续复评'] : []),
+        '2026-10-14', 'approved', '2026-09-14', J(tasks.map((t) => t.title)),
+        item.tier === 'rich' ? '稳定执行期演示计划。' : '第一周起步期演示计划。')
+    }
+    insDemoContact.run(item.id, item.caregiverName, '家属')
+  }
+
   const insDengAssessment = db.prepare(`INSERT INTO assessments
     (id,patient_id,name,value,level,tile_label,tile_value,tile_note,date,assessor,note,visible_to_family,sort_order)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -246,6 +288,12 @@ const seed = db.transaction(() => {
       t.videoId ?? null, t.reps ?? null, t.durationMin ?? null,
       t.requiresVideoUpload ? 1 : 0, t.origin, DENGYI_PLAN_CONFIRMED_ON, DENGYI_HOMECARE_START)
   }
+  for (const item of DEMO_PATIENTS) {
+    for (const t of demoTasksFor(item)) {
+      insTask.run(t.id, item.id, t.kind, t.title, t.scheduledTime, t.instruction, J(t.cautions),
+        null, t.reps ?? null, t.durationMin ?? null, 0, t.origin, '2026-09-14', '2026-09-14')
+    }
+  }
 
   const insRem = db.prepare(`INSERT INTO reminders
     (id,patient_id,time,text,task_id,highlight,enabled) VALUES (?,?,?,?,?,?,1)`)
@@ -292,6 +340,22 @@ const seed = db.transaction(() => {
   for (const v of buildVitals(today, d.id)) {
     insV.run(v.id, v.patientId, v.date, v.time, v.systolic, v.diastolic, v.by, v.at)
   }
+  for (const item of DEMO_PATIENTS.filter((p) => p.tier === 'rich')) {
+    const tasks = demoTasksFor(item)
+    for (let day = 1; day <= 14; day++) {
+      const date = `2026-09-${String(day).padStart(2, '0')}`
+      for (const task of tasks) {
+        insCI.run(`ci-${item.id}-${day}-${task.id}`, item.id, task.id, date,
+          day % 6 === 0 ? 'missed' : 'done', day % 6 === 0 ? '当日未完成，已如实记录' : null,
+          day % 6 === 0 ? null : `${date}T${task.scheduledTime}:00+08:00`)
+      }
+    }
+    for (let day = 7; day <= 14; day++) {
+      const date = `2026-09-${String(day).padStart(2, '0')}`
+      insV.run(`v-${item.id}-${day}`, item.id, date, '08:00', 120 + (day % 5), 76 + (day % 4),
+        item.caregiverName, `${date}T08:00:00+08:00`)
+    }
+  }
 
   /* ---------- 邓仪的指导、咨询与长期跟进记录 ---------- */
   const dengGuidances = [
@@ -307,6 +371,13 @@ const seed = db.transaction(() => {
     VALUES (?,?,'u-th-zhou',?,?,?,?,1,?,?)`)
   for (const [id, at, text, taskId] of dengGuidances) {
     insGuidance.run(id, d.id, therapist.name, text, taskId, at.slice(0, 10), at, at)
+  }
+  for (const item of DEMO_PATIENTS.filter((p) => p.tier === 'rich')) {
+    const taskId = demoTasksFor(item)[1]?.id ?? null
+    DEMO_RICH_GUIDANCE_TEXTS.forEach((text, i) => {
+      const at = `2026-09-${String(3 + i * 5).padStart(2, '0')}T10:00:00+08:00`
+      insGuidance.run(`g-${item.id}-${i + 1}`, item.id, therapist.name, text, taskId, at.slice(0, 10), at, at)
+    })
   }
 
   const dengMessages = [

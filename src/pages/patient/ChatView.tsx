@@ -280,7 +280,7 @@ export function splitDualSource(text: string): { external?: string; team: string
 export function ChatView() {
   const { planConfirmedOn, patient, taskDefs, therapist } = usePatientData()
   // 只允许显式登记的患者使用其专属问答；未知患者不复用其他病例内容。
-  const PRESET_QA = patientQaForId(patient.id)
+  const PRESET_QA = patientQaForId(patient.id, patient.name)
   const questionExample = patientQuestionExampleForId(patient.id)
   const patientFallback = {
     ...FALLBACK_ANSWER,

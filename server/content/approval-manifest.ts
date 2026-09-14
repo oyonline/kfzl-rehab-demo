@@ -24,6 +24,7 @@ export const APPROVED_PATIENT_QA: Readonly<Record<string, string>> = {
   'dy-swallow': '0b16de9ada94d814d156ced156a6f7a7a8f9212d76800783588d8bd4f5a2e7ee',
   'dy-monitor': 'ffc45ab07844917e6029f4135694fd945ee6e497a0e11306ee3634f3af9b40fe',
   'dy-checkin': 'bbf5ecd05f8987e66d96503abf02daa3fc06e9ac05620aad92d9dc289cced667',
+  'dy-skin': 'bbd2209e5045102646e7ed2aa9b76990e32a1797b5483a574e052a1c9f205552',
   'lin-start': '4abd981c90a861b736a9a5e5101964aae33690aeb993d87a521aeb606cf43cdf',
   'lin-tired': '20da2f99308e58a44b7631291d4396713e919596262877ca1a4edb101b9f93fc',
   'lin-checkin': 'cd97d8b0e4b31d016d2dce45af573a8652ea05989253b17741dbbc9f6ad7d379',
@@ -31,6 +32,10 @@ export const APPROVED_PATIENT_QA: Readonly<Record<string, string>> = {
   'zhao-next': 'e7148b42f071d69fd9078179512edfc068802d88028fb178dddd417550bf366d',
   'zhao-no-plan': '5e637d5cf381d2853d6b71aa7683dbe66552731a35e751ebf1bb65ff381013e2',
   'zhao-start': '4656f18b795fd2214845f952bbb9080cfc7620ea342862b7fdeaf35a671ea503',
+  'rich-training': 'd062a77300cff2e065461e9e0a9512f05429f059f5ce9725f57d4628dae7c291',
+  'rich-checkin': 'a5cf8f0ba748df1b715d62aa23942fa47bb5451e2ca3d2415a14bacdaafac6d1',
+  'rich-evening': '479d175b0a79553b9de4f509c0b13ee769372e7a9c64012df346f943e1be5fd4',
+  'rich-mood': '1a6e32a67249a28d2572c7ddab382839ac66bc605f0f37753e2cad74fbe0812e',
 }
 
 export const APPROVED_GUIDANCE: Readonly<Record<string, string>> = {

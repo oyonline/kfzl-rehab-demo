@@ -1,4 +1,5 @@
 import type { PresetQA } from './qa'
+import { DEMO_PATIENTS } from './demoPatients'
 
 const normalizeQuestion = (text: string) => text
   .normalize('NFKC')
@@ -48,6 +49,10 @@ export const DENGYI_QA: PresetQA[] = [
     [['忘记', '打卡'], ['补做', '训练']], ['邓仪的连续打卡记录'],
     ['康复记录的价值在于反映真实执行情况；漏打卡不等于需要把遗漏训练量集中补回。', '突然增加当天训练量可能造成额外疲劳，也会让康复师难以判断原计划是否合适。'],
     ['不要为了补打卡，把两天的训练量合并到今天。', '昨天保持未完成或漏记状态；如果系统允许补充备注，只填写真实完成情况，不补造记录。', '今天继续按当日计划执行，不额外追加次数。', '如果昨天是因为不适、抗拒或照护困难没有完成，请写明原因，方便康复师后续调整。']),
+  qa('dy-skin', '晚间皮肤检查发现发红，应该怎么办？',
+    [['皮肤', '发红'], ['受压', '红']], ['邓仪的晚间皮肤检查任务'],
+    ['活动受限时应定期观察容易受压部位；持续发红、破损或局部温度改变需要及时反馈。', '皮肤观察以真实记录为主，不应自行涂抹来源不明的药物处理。'],
+    ['先解除该部位持续受压，让邓仪保持安全、舒适的体位。', '记录发红部位、发现时间、范围以及解除受压后是否逐渐减轻；不要反复用力揉搓。', '继续按照既定照护计划完成体位调整和皮肤观察，不自行使用药物或敷料。', '发红持续不退、出现水疱、破损、渗液或疼痛明显时，请联系康复师或医护人员。'], true, '持续发红或皮肤破损需专业人员评估'),
 ]
 
 export const LIN_XIULAN_STARTER_QA: PresetQA[] = [
@@ -84,6 +89,26 @@ export const ZHAO_FUAN_ONBOARDING_QA: PresetQA[] = [
     ['赵福安需要先完成初次评估，并由康复师确认、下发训练计划后再开始。', '计划下发前，不要照搬林秀兰、邓仪或网上其他患者的训练任务。', '家属现在可以记录日常活动中的困难和希望改善的问题，供初次评估时说明。', '如需查询评估安排，可以在咨询中转交给小婷康复师。'], true, '可联系康复师确认初次评估安排'),
 ]
 
+/** 完整执行期共用问答只引用本人已建立的计划、任务和记录，不复用邓仪的个体病情。 */
+export const RICH_DEMO_QA: PresetQA[] = [
+  qa('rich-training', '今天的重点训练做得不顺利，怎么办？',
+    [['重点训练', '不顺利'], ['训练', '做不下去']], ['{姓名}的个体化训练计划', '当前重点：{重点}'],
+    ['居家训练应以动作安全、质量和真实反馈为先，不应为了完成打卡勉强追加训练量。', '连续出现困难时，应记录具体任务、出现困难的步骤和当时表现，便于康复师调整。'],
+    ['先停下当前项目，不要强行完成次数或自行增加强度。', '让{姓名}保持安全、舒适的姿势，休息后观察不适和疲劳是否缓解。', '在当日任务中记录做到哪一步、需要多少帮助以及未完成原因。', '同一问题反复出现，或出现新的明显不适时，请联系康复师。'], true, '训练量和动作调整需康复师确认'),
+  qa('rich-checkin', '训练完成后应该记录什么？',
+    [['训练完成', '记录'], ['打卡', '记什么']], ['{姓名}的当日任务', '{姓名}的历史执行记录'],
+    ['连续记录用于反映真实的完成情况和耐受变化，不应为了记录完整而补造内容。', '有效的记录需要包含完成程度、所需帮助以及训练后的反应。'],
+    ['按实际情况选择完成、部分完成或未完成。', '补充记录是否需要家属帮助、哪个步骤较困难，以及疲劳或不适的表现。', '如果中途停止，保留真实结果并写明原因，不用补做或补填。']),
+  qa('rich-evening', '晚间观察需要记录哪些情况？',
+    [['晚间观察', '记录'], ['晚上', '观察什么']], ['{姓名}的晚间观察与记录任务'],
+    ['晚间观察主要用来补充当天训练后的恢复情况和需要反馈的变化。', '记录应客观描述看到或听到的表现，不自行下诊断结论。'],
+    ['记录当天训练是否完成、休息后疲劳是否缓解，以及有无新的疼痛或明显不适。', '如果有需要持续观察的部位，写明位置、发现时间和变化，不自行使用药物处理。', '新的不适持续、加重，或影响第二天活动时，请反馈康复师。']),
+  qa('rich-mood', '最近配合训练的情绪有变化，怎么反馈？',
+    [['情绪', '变化'], ['配合', '训练', '反馈']], ['{姓名}的康复执行记录'],
+    ['情绪和配合度会受疲劳、不适、环境和任务难度等多种因素影响，宜记录变化出现的时间和情境。', '沟通时应避免争辩、指责或强迫完成训练。'],
+    ['先暂停当前任务，给{姓名}充分休息和反应时间。', '记录变化出现在什么时间、当时正在做什么、持续多久，以及是否伴随疲劳或不适。', '可以用简短语句确认感受，暂时降低环境干扰，不用当场追问原因。', '连续几天明显不愿参与，或突然出现异常行为变化时，请联系康复师。']),
+]
+
 /** 2026-09-14 用户确认提交发布；具体版本由审批哈希和测试锁定。 */
 export const PATIENT_QA_REVIEW_STATUS: 'pending' | 'approved' = 'approved'
 
@@ -91,14 +116,34 @@ export function patientQuestionExampleForId(patientId: string): string | undefin
   if (patientId === 'p-dengyi') return DENGYI_QA[0]?.question
   if (patientId === 'p-001') return LIN_XIULAN_STARTER_QA[0]?.question
   if (patientId === 'p-zhao-grandpa') return ZHAO_FUAN_ONBOARDING_QA[0]?.question
+  const demo = DEMO_PATIENTS.find((item) => item.id === patientId)
+  if (demo?.tier === 'starter') return LIN_XIULAN_STARTER_QA[0]?.question
+  if (demo?.tier === 'unassessed') return ZHAO_FUAN_ONBOARDING_QA[0]?.question
+  if (demo?.tier === 'rich') return patientQaForId(patientId, demo.name)[0]?.question
   return undefined
 }
 
 /** 未登记的患者不复用任何病例问答，避免只替换姓名造成医疗内容串用。 */
-export function patientQaForId(patientId: string): PresetQA[] {
+export function patientQaForId(patientId: string, patientName?: string): PresetQA[] {
   if (PATIENT_QA_REVIEW_STATUS !== 'approved') return []
   if (patientId === 'p-dengyi') return DENGYI_QA
   if (patientId === 'p-001') return LIN_XIULAN_STARTER_QA
   if (patientId === 'p-zhao-grandpa') return ZHAO_FUAN_ONBOARDING_QA
-  return []
+  const demo = DEMO_PATIENTS.find((item) => item.id === patientId)
+  if (!demo) return []
+  const name = patientName ?? demo.name
+  const personalize = (items: PresetQA[], originalName: string) => items.map((item) => ({
+    ...item,
+    question: item.question.replaceAll(originalName, name),
+    basis: item.basis.map((text) => text.replaceAll(originalName, name)),
+    external: item.external?.map((text) => text.replaceAll(originalName, name)),
+    answer: item.answer.map((text) => text.replaceAll(originalName, name)),
+    escalateHint: item.escalateHint?.replaceAll(originalName, name),
+  }))
+  if (demo.tier === 'starter') return personalize(LIN_XIULAN_STARTER_QA, '林秀兰')
+  if (demo.tier === 'unassessed') return personalize(ZHAO_FUAN_ONBOARDING_QA, '赵福安')
+  return personalize(RICH_DEMO_QA, '{姓名}').map((item) => ({
+    ...item,
+    basis: item.basis.map((text) => text.replaceAll('{重点}', demo.focus)),
+  }))
 }

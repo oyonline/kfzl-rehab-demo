@@ -8,6 +8,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { getDb, closeDb } from '../server/db/index.ts'
 import { runSeed } from '../server/seed/run.ts'
 import { visiblePatientIds } from '../server/auth/middleware.ts'
+import { DEMO_PATIENTS } from '../src/data/demoPatients.ts'
 
 beforeAll(() => { getDb(); runSeed() })
 afterAll(() => closeDb())
@@ -18,6 +19,10 @@ describe('种子数据', () => {
     expect(rows.map((r) => r.username)).toContain('chen')
     expect(rows.map((r) => r.username)).toContain('dengyi')
     expect(rows.map((r) => r.username)).toContain('zhou')
+    expect(rows).toHaveLength(19)
+    for (const patient of DEMO_PATIENTS) {
+      expect(rows.map((r) => r.username)).toContain(patient.username)
+    }
     // 停用账号登不进来，见 requireAuth 每次回库核 status
     expect(rows.every((r) => r.status === 'active')).toBe(true)
   })
@@ -88,6 +93,43 @@ describe('行级权限 patient_members', () => {
     expect(patient).toEqual({ name: '赵福安', age_band: '' })
     const taskCount = (db.prepare("SELECT count(*) count FROM task_defs WHERE patient_id='p-zhao-grandpa'").get() as any).count
     expect(taskCount).toBe(0)
+  })
+
+  it('新增 15 名患者按 5/5/5 三层灌入', () => {
+    const db = getDb()
+    expect((db.prepare('SELECT count(*) count FROM patients').get() as any).count).toBe(18)
+    expect(visiblePatientIds('u-th-zhou', 'therapist')).toHaveLength(18)
+
+    expect(DEMO_PATIENTS.filter((p) => p.tier === 'rich')).toHaveLength(5)
+    expect(DEMO_PATIENTS.filter((p) => p.tier === 'starter')).toHaveLength(5)
+    expect(DEMO_PATIENTS.filter((p) => p.tier === 'unassessed')).toHaveLength(5)
+  })
+
+  it('新增患者的资料丰富度符合所属阶段', () => {
+    const db = getDb()
+    for (const patient of DEMO_PATIENTS) {
+      const tasks = (db.prepare('SELECT count(*) count FROM task_defs WHERE patient_id=?').get(patient.id) as any).count
+      const checkIns = (db.prepare('SELECT count(*) count FROM check_ins WHERE patient_id=?').get(patient.id) as any).count
+      const guidance = (db.prepare('SELECT count(*) count FROM guidances WHERE patient_id=?').get(patient.id) as any).count
+      const goals = db.prepare('SELECT plan_status FROM patient_goals WHERE patient_id=?').get(patient.id) as any
+      if (patient.tier === 'rich') {
+        expect(tasks).toBe(3)
+        expect(checkIns).toBe(42)
+        expect(guidance).toBe(3)
+        expect(goals.plan_status).toBe('approved')
+      } else if (patient.tier === 'starter') {
+        expect(tasks).toBe(2)
+        expect(checkIns).toBe(0)
+        expect(guidance).toBe(0)
+        expect(goals.plan_status).toBe('approved')
+      } else {
+        expect(tasks).toBe(0)
+        expect(checkIns).toBe(0)
+        expect(guidance).toBe(0)
+        expect(goals.plan_status).toBe('none')
+      }
+      expect(visiblePatientIds(`u-family-${patient.id.slice(2)}`, 'family')).toEqual([patient.id])
+    }
   })
 
   it('未授权用户看不到任何患者 —— 不是「看到空档案」而是「没有这一行」', () => {

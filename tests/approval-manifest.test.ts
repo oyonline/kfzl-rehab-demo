@@ -3,6 +3,7 @@ import { PRESET_QA } from '../src/data/qa.ts'
 import {
   DENGYI_QA,
   LIN_XIULAN_STARTER_QA,
+  RICH_DEMO_QA,
   ZHAO_FUAN_ONBOARDING_QA,
 } from '../src/data/patientQa.ts'
 import { GUIDANCE } from '../src/data/guidance.ts'
@@ -38,10 +39,10 @@ describe('已确认内容版本清单', () => {
     )).toBe(false)
   })
 
-  it('锁定用户确认提交的 13 条扩充版患者专属问答', () => {
-    const patientQa = [...DENGYI_QA, ...LIN_XIULAN_STARTER_QA, ...ZHAO_FUAN_ONBOARDING_QA]
+  it('锁定用户确认的 18 条患者分层问答', () => {
+    const patientQa = [...DENGYI_QA, ...LIN_XIULAN_STARTER_QA, ...ZHAO_FUAN_ONBOARDING_QA, ...RICH_DEMO_QA]
     expect(patientQa.filter((item) =>
-      isApprovedVersion(APPROVED_PATIENT_QA, item.id, hashApprovedContent(item)))).toHaveLength(13)
-    expect(Object.keys(APPROVED_PATIENT_QA)).toHaveLength(13)
+      isApprovedVersion(APPROVED_PATIENT_QA, item.id, hashApprovedContent(item)))).toHaveLength(18)
+    expect(Object.keys(APPROVED_PATIENT_QA)).toHaveLength(18)
   })
 })
