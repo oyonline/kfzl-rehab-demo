@@ -39,6 +39,7 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
   if (!open) return null
   // 新建档案在逐项录入前各节都是空的；不兜底就会白屏（入院记录）或渲染空壳表格
   const a = patient.admission
+  const isLinXiulan = patient.id === 'p-001'
 
   /**
    * 有值才渲染这一行。
@@ -89,6 +90,7 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               <Row k="性别年龄" v={join(' · ', patient.gender, patient.ageBand)} />
               <Row k="诊断" v={join(' · ', patient.diagnosis.strokeType, patient.diagnosis.stage)} />
               <Row k="合并疾病" v={patient.diagnosis.comorbidities.join('、')} />
+              <Row k="居住地址" v={patient.address ?? ''} />
               <Row k="居住情况" v={patient.livingSituation} />
               {/* 照护人与紧急联系是同一个人，原先分两行写了两遍 */}
               <Row k="照护人" v={join(' · ',
@@ -103,7 +105,7 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               一是这两栏原先一短一长，右栏比左栏高出一大截；
               二是风险是照护者真正要照着做的东西，值得单独一块，
               不该跟评估描述挤在同一张卡里用「·」串成一段。 */}
-          <section className="sec">
+          {!isLinXiulan && <section className="sec">
             <div className="sec-t">功能情况</div>
             {join('', patient.functionStatus.affectedSide, patient.functionStatus.mobility,
                   patient.functionStatus.swallowing, patient.functionStatus.cognition)
@@ -115,10 +117,10 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               <Row k="认知沟通" v={patient.functionStatus.cognition} />
             </dl>
               ) : <div className="sec-d">尚未录入</div>}
-          </section>
+          </section>}
 
           {/* 风险与心理支持 */}
-          <section className="sec">
+          {!isLinXiulan && <section className="sec">
             <div className="sec-t">风险与心理支持</div>
             <div className="sec-d">
               {patient.functionStatus.risks.length || patient.psychosocial
@@ -137,10 +139,10 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
                 <p className="prose" style={{ marginTop: 6 }}>{patient.psychosocial}</p>
               </>
             )}
-          </section>
+          </section>}
 
           {/* 2 入院记录 —— 无记录时整节不渲染，只留一行说明 */}
-          {!a ? (
+          {!isLinXiulan && (!a ? (
             <section className="sec">
               <div className="sec-t">入院记录</div>
               <div className="sec-d">尚未录入</div>
@@ -164,10 +166,10 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               {a.dischargeOrders.map((o) => <li key={o}><span>{o}</span></li>)}
             </ul>
           </section>
-          )}
+          ))}
 
           {/* 3 诊疗与照护经过 */}
-          <section className="sec">
+          {!isLinXiulan && <section className="sec">
             <div className="sec-t">诊疗与照护经过</div>
             <div className="sec-d">
               {patient.careEvents.length ? '从发病入院到当前居家康复阶段' : '尚未录入'}
@@ -182,10 +184,10 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
                 </div>
               ))}
             </div>
-          </section>
+          </section>}
 
           {/* 5 评估记录 */}
-          <section className="sec">
+          {!isLinXiulan && <section className="sec">
             <div className="sec-t">评估记录</div>
             <div className="sec-d">
               由康复师现场评估后录入，系统不代为判定
@@ -213,10 +215,10 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
               </tbody>
             </table>
             )}
-          </section>
+          </section>}
 
           {/* 6 用药与既往史 */}
-          <section className="sec">
+          {!isLinXiulan && <section className="sec">
             <div className="sec-t">用药与既往史</div>
             <div className="sec-d">
               {patient.medications.length || patient.pastHistory.length
@@ -237,20 +239,44 @@ export function ProfileDrawer({ open, onClose, audience }: { open: boolean; onCl
             <ul className="olist">
               {patient.pastHistory.map((h) => <li key={h}><span>{h}</span></li>)}
             </ul>
-          </section>
+          </section>}
 
           {/* 7 当前目标 */}
-          <section className="sec">
+          {!isLinXiulan && <section className="sec">
             <div className="sec-t">本阶段康复目标</div>
             <div className="sec-d">
               {patient.goals.shortTerm.length
-                ? <>由 {therapist.name} 康复师制定{patient.goals.nextReviewDate && ` · 下次复评 ${patient.goals.nextReviewDate}`}</>
+                ? <>{patient.rehabPlan?.status === 'pending' ? '来源资料已录入，待专业审核' : `由 ${therapist.name} 康复师制定`}{patient.goals.nextReviewDate && ` · 下次复评 ${patient.goals.nextReviewDate}`}</>
                 : '尚未录入'}
             </div>
             <ul className="olist">
               {patient.goals.shortTerm.map((g) => <li key={g}><span>{g}</span></li>)}
             </ul>
-          </section>
+            {!!patient.goals.longTerm?.length && (
+              <>
+                <hr className="rule" />
+                <div className="sec-t" style={{ fontSize: 'var(--t-sm)' }}>长期目标</div>
+                <ul className="olist">
+                  {patient.goals.longTerm.map((g) => <li key={g}><span>{g}</span></li>)}
+                </ul>
+              </>
+            )}
+          </section>}
+
+          {audience === 'therapist' && patient.rehabPlan && (
+            <section className="sec">
+              <div className="sec-t">个体化康复训练计划</div>
+              <div className="sec-d">
+                {patient.rehabPlan.status === 'pending' ? '待专业审核 · 审核前不向家属端下发' :
+                  patient.rehabPlan.status === 'approved' ? '已审核' : '已驳回'}
+                {patient.rehabPlan.plannedOn && ` · 制定日期 ${patient.rehabPlan.plannedOn}`}
+              </div>
+              <ul className="olist">
+                {patient.rehabPlan.items.map((item) => <li key={item}><span>{item}</span></li>)}
+              </ul>
+              {patient.rehabPlan.sourceNote && <p className="prose" style={{ marginTop: 10 }}>{patient.rehabPlan.sourceNote}</p>}
+            </section>
+          )}
         </div>
       </aside>
     </>

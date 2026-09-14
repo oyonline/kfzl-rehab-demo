@@ -17,6 +17,7 @@ interface Row {
   gender: string
   ageBand: string
   stage: string
+  planStatus: 'none' | 'pending' | 'approved' | 'rejected'
   todayDone: number
   todayTotal: number
   pendingCount: number
@@ -89,7 +90,7 @@ export function PatientListView() {
             {list.map((r) => {
               // 血压异常优先于咨询待回复 —— 前者是身体出状况，后者是沟通事项
               const flag = r.todayTotal === 0
-                ? '康复计划待制定'
+                ? r.planStatus === 'pending' ? '康复计划待审核' : '康复计划待制定'
                 : r.bpAlert
                 ? '血压超出安全范围'
                 : r.pendingCount > 0
@@ -111,7 +112,8 @@ export function PatientListView() {
                 <td style={{ color: 'var(--ink-2)' }}>{r.stage || '尚未录入'}</td>
                 <td>
                   <span className={`chip ${r.todayTotal > 0 && r.todayDone >= r.todayTotal ? 'chip-ok' : ''} num`}>
-                    {r.todayTotal > 0 ? `${r.todayDone}/${r.todayTotal}` : '待制定'}
+                    {r.todayTotal > 0 ? `${r.todayDone}/${r.todayTotal}` :
+                      r.planStatus === 'pending' ? '待审核' : '待制定'}
                   </span>
                 </td>
                 <td>

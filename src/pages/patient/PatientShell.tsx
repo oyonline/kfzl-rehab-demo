@@ -34,18 +34,23 @@ import '../../styles/app.css'
  */
 export function PatientShell() {
   const [patientId, setPatientId] = useState<string | null>(null)
+  const [patientOptions, setPatientOptions] = useState<Array<{ id: string; name: string }>>([])
   const [noPatient, setNoPatient] = useState(false)
 
   useEffect(() => {
     let alive = true
     void (async () => {
       try {
-        const res = await authFetch('/api/auth/me')
+        const res = await authFetch('/api/patients')
         if (!res.ok) return
         const d = await res.json()
         if (!alive) return
-        if (d.patientIds?.length) setPatientId(d.patientIds[0])
-        else setNoPatient(true)
+        const options = (d.patients ?? []).map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }))
+        setPatientOptions(options)
+        if (options.length) {
+          const remembered = sessionStorage.getItem('familyPatientId')
+          setPatientId(options.some((p: { id: string }) => p.id === remembered) ? remembered : options[0].id)
+        } else setNoPatient(true)
       } catch { /* 会话失效由 authFetch 处理 */ }
     })()
     return () => { alive = false }
@@ -67,14 +72,17 @@ export function PatientShell() {
 
   return (
     <ContentProvider>
-      <PatientProvider patientId={patientId}>
-        <PatientShellInner />
+      <PatientProvider key={patientId} patientId={patientId}>
+        <PatientShellInner patientOptions={patientOptions} onPatientChange={setPatientId} />
       </PatientProvider>
     </ContentProvider>
   )
 }
 
-function PatientShellInner() {
+function PatientShellInner({ patientOptions, onPatientChange }: {
+  patientOptions: Array<{ id: string; name: string }>
+  onPatientChange: (id: string) => void
+}) {
   const { patient, careAlerts } = usePatientData()
   const nav = useNavigate()
   const { pathname } = useLocation()
@@ -84,6 +92,7 @@ function PatientShellInner() {
   const state = useDemoState()
   const loaded = useDemoLoaded()
   const unread = state.guidances.filter((g) => !g.readByFamily).length
+  const isLinXiulan = patient.id === 'p-001'
 
   // 只取家属可见、且给了短形式的量表；顺序按 TILE_ORDER，不依赖 seed 的书写顺序
   const assessTiles = TILE_ORDER
@@ -113,6 +122,24 @@ function PatientShellInner() {
           {/* 2026-09 门户式改版：顶栏 8 项链接撤除，功能入口改为首页宫格（HomeEntries） */}
         </div>
         <div className="topbar-right">
+          {patientOptions.length > 1 && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--ink-3)', fontSize: 'var(--t-xs)' }}>
+              当前患者
+              <select
+                className="ta"
+                aria-label="当前患者"
+                value={patient.id}
+                onChange={(e) => {
+                  sessionStorage.setItem('familyPatientId', e.target.value)
+                  onPatientChange(e.target.value)
+                  nav('/patient')
+                }}
+                style={{ width: 132, height: 36, padding: '0 30px 0 10px' }}
+              >
+                {patientOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </label>
+          )}
           {/* 消息中心：今日提醒记录 + 未读留言数。任何页面都点得到 */}
           <ReminderBell unreadGuidance={unread} />
           <span className="who">
@@ -156,19 +183,20 @@ function PatientShellInner() {
             {!patient.diagnosis.stage && !patient.diagnosis.strokeType && <span className="chip">档案待完善</span>}
           </div>
 
-          {/* ② 评估摘要 —— 四张量表的分值，全卡最有说服力的部分 */}
-          <div className="fgroup fgroup-bare">评估摘要</div>
-          <div className="assess">
-            {assessTiles.length === 0 && <div className="card-note">尚未开始评估</div>}
-            {assessTiles.map((t) => (
-              <div className="assess-i" key={t.label}>
-                <div className="assess-k">{t.label}</div>
-                <div className="assess-v num">{t.value}</div>
-                <div className="assess-n">{t.note}</div>
-              </div>
-            ))}
-          </div>
-          {assessDate && <div className="assess-src">{assessDate} · 康复团队评估</div>}
+          {!isLinXiulan && <>
+            <div className="fgroup fgroup-bare">评估摘要</div>
+            <div className="assess">
+              {assessTiles.length === 0 && <div className="card-note">尚未开始评估</div>}
+              {assessTiles.map((t) => (
+                <div className="assess-i" key={t.label}>
+                  <div className="assess-k">{t.label}</div>
+                  <div className="assess-v num">{t.value}</div>
+                  <div className="assess-n">{t.note}</div>
+                </div>
+              ))}
+            </div>
+            {assessDate && <div className="assess-src">{assessDate} · 康复团队评估</div>}
+          </>}
 
           <dl className="facts" style={{ marginTop: 18 }}>
             <div className="fact">
@@ -188,12 +216,12 @@ function PatientShellInner() {
           </button>
 
           {/* ③ 今日须注意 —— 三条各自对应一项评估结论与一项今日任务 */}
-          <div className="risk">
+          {!isLinXiulan && <div className="risk">
             <div className="risk-t"><IconAlert size={15} /> 今日须注意</div>
             {careAlerts.length > 0
               ? <ul>{careAlerts.map((a) => <li key={a}>{a}</li>)}</ul>
               : <div className="card-note" style={{ marginTop: 8 }}>暂无个性化注意事项</div>}
-          </div>
+          </div>}
         </aside>
 
         {/* 内容列：二级页顶部给一个固定的「返回首页」，门户化后这是唯一的全局回跳入口 */}

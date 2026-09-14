@@ -80,7 +80,7 @@ Express 5 + better-sqlite3，**49 个路由处理器**，按域拆分：
 server/index.ts        应用入口、AI 开关、启动即建连跑迁移、空库自动灌种
 server/auth/           scrypt 密码哈希、jose 签发 JWT、requireAuth 中间件
 server/db/             连接与迁移执行器
-server/db/migrations/  3 支迁移，28 张表 / 21 个索引
+server/db/migrations/  5 支迁移，28 张表 / 21 个索引
 server/routes/         auth · patients · kb · content · review
 server/kb/             语料导入、切片、分词、FTS5 检索
 server/events/         跨端实时推送
@@ -220,7 +220,7 @@ src/pages/therapist/   康复师端
 
 ## 内容边界与数据来源
 
-演示病例为「林奶奶」，**不对应任何可识别的真实个人**。数据来源分三类，仓内逐字段标注：
+主演示病例为「林秀兰」，**不对应任何可识别的真实个人**。数据来源分三类，仓内逐字段标注：
 
 | 类别 | 说明 |
 |---|---|

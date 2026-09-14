@@ -66,7 +66,8 @@ function PatientDetailInner() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className={`chip ${rows.length > 0 && done >= rows.length ? 'chip-ok' : ''} num`}>
-            {rows.length > 0 ? `今日 ${done}/${rows.length}` : '康复计划待制定'}
+            {rows.length > 0 ? `今日 ${done}/${rows.length}` :
+              patient.rehabPlan?.status === 'pending' ? '康复计划待审核' : '康复计划待制定'}
           </span>
           {patient.goals.nextReviewDate && <span className="chip chip-brand">下次复评 {patient.goals.nextReviewDate}</span>}
           <button className="btn-quiet" onClick={() => setProfileOpen(true)}><IconFile size={14} /> 完整档案</button>

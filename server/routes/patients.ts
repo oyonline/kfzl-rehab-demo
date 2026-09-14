@@ -50,7 +50,7 @@ patientsRouter.get('/', requireAuth, (req, res) => {
   const ph = ids.map(() => '?').join(',')
   // 工作台要的逐患者标记一次算齐：拆成前端逐个请求，7 位患者就是 7 轮往返。
   const rows = db.prepare(`
-    SELECT p.id, p.name, p.gender, p.age_band, d.stage, m.access,
+    SELECT p.id, p.name, p.gender, p.age_band, d.stage, g.plan_status, m.access,
       (SELECT count(*) FROM task_defs t
         WHERE t.patient_id = p.id AND t.active_to IS NULL)                      AS today_total,
       (SELECT count(*) FROM check_ins c
@@ -61,6 +61,7 @@ patientsRouter.get('/', requireAuth, (req, res) => {
         WHERE u.patient_id = p.id AND u.date = ?)                               AS uploads_today
     FROM patients p
     LEFT JOIN patient_diagnosis d ON d.patient_id = p.id
+    LEFT JOIN patient_goals g     ON g.patient_id = p.id
     LEFT JOIN patient_members m   ON m.patient_id = p.id AND m.user_id = ?
     WHERE p.id IN (${ph}) AND p.status = 'active'
     ORDER BY p.created_at
@@ -78,7 +79,8 @@ patientsRouter.get('/', requireAuth, (req, res) => {
   res.json({
     patients: rows.map((r) => ({
       id: r.id, name: r.name, gender: r.gender, ageBand: r.age_band,
-      stage: r.stage ?? '', todayDone: r.today_done, todayTotal: r.today_total,
+      stage: r.stage ?? '', planStatus: r.plan_status ?? 'none',
+      todayDone: r.today_done, todayTotal: r.today_total,
       pendingCount: r.pending_count, uploadsToday: r.uploads_today,
       bpAlert: bpAlerts.get(r.id) ?? false,
       // 主责/协管才能点进详情；其余只在名单里呈现服务规模
@@ -174,6 +176,11 @@ patientsRouter.get('/:id/profile', requireAuth, requirePatientAccess(), (req, re
     admission: db.prepare('SELECT * FROM admissions WHERE patient_id = ? LIMIT 1').get(id),
     events: db.prepare('SELECT * FROM care_events WHERE patient_id = ? ORDER BY date').all(id) as any[],
   })
+
+  // 未经康复专业人员审核的计划只供康复师内部复核，不向家属端下发。
+  if (req.user!.role === 'family' && patient.rehabPlan?.status !== 'approved') {
+    delete patient.rehabPlan
+  }
 
   // active_to IS NULL = 当前生效的那版计划。历史打卡回看仍能对上当时的版本，
   // 因为 check_ins 存的是 task_id，任务行本身不删。
@@ -430,7 +437,7 @@ patientsRouter.get('/inbox/pending', requireAuth, (req, res) => {
 })
 
 /**
- * 排练重置：清掉动态记录并重灌固定模式的历史。
+ * 排练重置：清掉本轮执行数据，并按患者成熟度恢复固定模式。
  * 换后端后必须显式保留这条路径，否则每次彩排的数据会累积到正式演示那天的图表上
  * （docs/后端与知识库方案.md §5 坑 4）。
  */
@@ -442,15 +449,29 @@ patientsRouter.post('/:id/reset', requireAuth, requirePatientAccess(), (req, res
   }
   const today = new Date()
   db.transaction(() => {
-    for (const t of ['escalations', 'guidances', 'messages', 'uploads', 'vitals', 'check_ins']) {
+    // 专业指导和咨询属长期档案，重置排练打卡时不清除。
+    for (const t of ['escalations', 'uploads', 'vitals', 'check_ins']) {
       db.prepare(`DELETE FROM ${t} WHERE patient_id = ?`).run(patientId)
     }
+    const taskRows = db.prepare(`SELECT id,kind,title,scheduled_time,instruction,cautions,video_id,reps,
+      duration_min,requires_video_upload,origin FROM task_defs
+      WHERE patient_id=? AND active_to IS NULL ORDER BY scheduled_time`).all(patientId) as any[]
+    const tasks = taskRows.map((r) => ({
+      id: r.id, patientId, kind: r.kind, title: r.title, scheduledTime: r.scheduled_time,
+      instruction: r.instruction, cautions: JSON.parse(r.cautions ?? '[]'), videoId: r.video_id ?? undefined,
+      reps: r.reps ?? undefined, durationMin: r.duration_min ?? undefined,
+      requiresVideoUpload: !!r.requires_video_upload, origin: r.origin,
+    }))
     const ci = db.prepare(`INSERT INTO check_ins (id,patient_id,task_id,date,status,note,at) VALUES (?,?,?,?,?,?,?)`)
-    for (const c of buildHistory(today)) {
+    const history = patientId === 'p-dengyi'
+      ? buildHistory(today, '2026-08-12', patientId, tasks)
+      : []
+    for (const c of history) {
       ci.run(c.id, patientId, c.taskId, c.date, c.status, c.note ?? null, c.at ?? null)
     }
     const v = db.prepare(`INSERT INTO vitals (id,patient_id,date,time,systolic,diastolic,by,at) VALUES (?,?,?,?,?,?,?,?)`)
-    for (const rec of buildVitals(today)) {
+    const vitals = patientId === 'p-dengyi' ? buildVitals(today, patientId) : []
+    for (const rec of vitals) {
       v.run(rec.id, patientId, rec.date, rec.time, rec.systolic, rec.diastolic, rec.by, rec.at)
     }
   })()

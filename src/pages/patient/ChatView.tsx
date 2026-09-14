@@ -274,7 +274,23 @@ export function splitDualSource(text: string): { external?: string; team: string
 
 export function ChatView() {
   const { planConfirmedOn, patient, taskDefs, therapist } = usePatientData()
-  const { presetQA: PRESET_QA } = useContent()
+  const { presetQA: sourcePresetQA } = useContent()
+  // 已审核内容源保持原字节与哈希不变；患者改名只在展示层替换称呼。
+  // 其他患者不能套用林秀兰的个体化预设问答，只走各自档案上下文或转人工。
+  const displayQa = (q: PresetQA): PresetQA => ({
+    ...q,
+    basis: q.basis.map((s) => s.replaceAll('林奶奶', patient.name)),
+    external: q.external?.map((s) => s.replaceAll('林奶奶', patient.name)),
+    answer: q.answer.map((s) => s.replaceAll('林奶奶', patient.name)),
+    escalateHint: q.escalateHint?.replaceAll('林奶奶', patient.name),
+  })
+  const PRESET_QA = patient.id === 'p-001' ? sourcePresetQA.map(displayQa) : []
+  const patientFallback = {
+    ...FALLBACK_ANSWER,
+    basis: FALLBACK_ANSWER.basis.map((s) => s.replaceAll('林奶奶', patient.name)),
+    answer: FALLBACK_ANSWER.answer.map((s) => s.replaceAll('林奶奶', patient.name)),
+    escalateHint: FALLBACK_ANSWER.escalateHint.replaceAll('林奶奶', patient.name),
+  }
   const promptCtx: PromptCtx = { patient, taskDefs, therapist, planConfirmedOn }
   const state = useDemoState()
   const [draft, setDraft] = useState('')
@@ -383,7 +399,7 @@ export function ChatView() {
     } catch (error: any) {
       console.error('LLM 调用失败:', error)
       // 降级到预设答案；自由提问没有预设时走 FALLBACK_ANSWER（v0.1 §12：不硬答，转人工）
-      const fallback = presetQ ?? FALLBACK_ANSWER
+      const fallback = presetQ ?? patientFallback
       setStreamingText('')
       setWaitingLLM(false)
       // 本机无模型时走这里。检索仍然有效 —— 它不依赖模型，
@@ -468,7 +484,7 @@ export function ChatView() {
           const isMe = m.role === 'family'
           const isTherapist = m.role === 'therapist'
           const q = PRESET_QA.find((x) => x.answer.join('\n') === m.text)
-          const hint = q?.escalateHint ?? FALLBACK_ANSWER.escalateHint
+          const hint = q?.escalateHint ?? patientFallback.escalateHint
           return (
             <div className="bub-row" data-me={isMe} key={m.id}>
               {/* 必须一眼分清 AI 与康复师：产品主张是 AI 不取代专业人员，

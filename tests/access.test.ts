@@ -13,9 +13,10 @@ beforeAll(() => { getDb(); runSeed() })
 afterAll(() => closeDb())
 
 describe('种子数据', () => {
-  it('灌出两个可登录账号', () => {
+  it('灌出演示登录账号', () => {
     const rows = getDb().prepare('SELECT username, role, status FROM users ORDER BY username').all() as any[]
     expect(rows.map((r) => r.username)).toContain('chen')
+    expect(rows.map((r) => r.username)).toContain('dengyi')
     expect(rows.map((r) => r.username)).toContain('zhou')
     // 停用账号登不进来，见 requireAuth 每次回库核 status
     expect(rows.every((r) => r.status === 'active')).toBe(true)
@@ -35,6 +36,58 @@ describe('行级权限 patient_members', () => {
   it('家属与康复师都被授权到 p-001', () => {
     expect(visiblePatientIds('u-family-chen', 'family')).toContain('p-001')
     expect(visiblePatientIds('u-th-zhou', 'therapist')).toContain('p-001')
+  })
+
+  it('灌出邓仪第三位患者，并绑定独立家属账号与 zhou 康复师', () => {
+    const db = getDb()
+    const patient = db.prepare('SELECT name,address FROM patients WHERE id = ?').get('p-dengyi') as any
+    expect(patient).toEqual({ name: '邓仪', address: '康乐小区3栋412室' })
+    expect(visiblePatientIds('u-family-dengyi', 'family')).toEqual(['p-dengyi'])
+    expect(visiblePatientIds('u-family-zhao', 'family')).not.toContain('p-dengyi')
+    expect(visiblePatientIds('u-family-zhao', 'family')).toContain('p-zhao-grandpa')
+    expect(visiblePatientIds('u-th-zhou', 'therapist')).toContain('p-dengyi')
+  })
+
+  it('主病例使用实名林秀兰', () => {
+    const row = getDb().prepare('SELECT name FROM patients WHERE id = ?').get('p-001') as any
+    expect(row.name).toBe('林秀兰')
+  })
+
+  it('邓仪计划已审核执行，并有完整动态记录', () => {
+    const db = getDb()
+    const plan = db.prepare('SELECT plan_status,plan_date FROM patient_goals WHERE patient_id = ?')
+      .get('p-dengyi') as any
+    expect(plan).toEqual({ plan_status: 'approved', plan_date: '2026-09-13' })
+    const taskCount = (db.prepare('SELECT count(*) count FROM task_defs WHERE patient_id = ?')
+      .get('p-dengyi') as any).count
+    expect(taskCount).toBe(6)
+    const counts = db.prepare(`SELECT
+      (SELECT count(*) FROM check_ins WHERE patient_id='p-dengyi') checkIns,
+      (SELECT count(*) FROM guidances WHERE patient_id='p-dengyi') guidances,
+      (SELECT count(*) FROM messages WHERE patient_id='p-dengyi') messages,
+      (SELECT count(*) FROM vitals WHERE patient_id='p-dengyi') vitals`).get() as any
+    expect(counts.checkIns).toBeGreaterThan(100)
+    expect(counts.guidances).toBeGreaterThanOrEqual(6)
+    expect(counts.messages).toBeGreaterThanOrEqual(4)
+    expect(counts.vitals).toBeGreaterThanOrEqual(8)
+  })
+
+  it('林秀兰处于康复起步期，不预置过往打卡、趋势和大量指导', () => {
+    const db = getDb()
+    for (const table of ['check_ins', 'vitals', 'guidances', 'messages']) {
+      const count = (db.prepare(`SELECT count(*) count FROM ${table} WHERE patient_id='p-001'`).get() as any).count
+      expect(count).toBe(0)
+    }
+    const taskCount = (db.prepare("SELECT count(*) count FROM task_defs WHERE patient_id='p-001'").get() as any).count
+    expect(taskCount).toBeGreaterThan(0)
+  })
+
+  it('赵福安仅保留最小建档资料', () => {
+    const db = getDb()
+    const patient = db.prepare("SELECT name,age_band FROM patients WHERE id='p-zhao-grandpa'").get() as any
+    expect(patient).toEqual({ name: '赵福安', age_band: '' })
+    const taskCount = (db.prepare("SELECT count(*) count FROM task_defs WHERE patient_id='p-zhao-grandpa'").get() as any).count
+    expect(taskCount).toBe(0)
   })
 
   it('未授权用户看不到任何患者 —— 不是「看到空档案」而是「没有这一行」', () => {

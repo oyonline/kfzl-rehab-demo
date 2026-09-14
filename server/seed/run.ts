@@ -1,8 +1,8 @@
 /**
  * 种子灌入 —— 把 src/data/ 里的演示数据搬进数据库。
  *
- * 林奶奶保留完整演示数据；赵福安爷爷按 2026-09-03 用户裁决仅预置
- * 最小建档记录，不预置诊断、评估、用药、康复计划或执行历史。
+ * 邓仪是资料与执行记录最完整的演示病例；林秀兰处于康复刚起步的
+ * 第一周，不预置历史打卡与趋势；赵福安仅有最小建档骨架。
  *
  * 幂等：每次运行先清空业务表（包括演示审计日志）再重灌，便于反复排练。
  * 只有 approval-manifest.ts 中 ID 与内容哈希都匹配的固定版本会恢复为已通过；
@@ -18,6 +18,9 @@ import {
   patient, taskDefs, videos, therapist,
   PLAN_CONFIRMED_ON, HOMECARE_START, buildHistory, buildVitals,
 } from '../../src/data/seed.ts'
+import {
+  dengyiPatient, dengyiTaskDefs, DENGYI_HOMECARE_START, DENGYI_PLAN_CONFIRMED_ON,
+} from '../../src/data/dengyi.ts'
 import { VIDEO_STEPS } from '../../src/data/videoSteps.ts'
 import { CARE_ALERTS, GUIDANCE } from '../../src/data/guidance.ts'
 import { PRESET_QA } from '../../src/data/qa.ts'
@@ -61,7 +64,9 @@ const seed = db.transaction(() => {
     { id: 'u-family-chen', username: 'chen', pw: '123456', role: 'family',
       display: '陈女士（女儿）', title: null },
     { id: 'u-family-zhao', username: 'zhao', pw: '123456', role: 'family',
-      display: '赵福安爷爷', title: null },
+      display: '赵福安', title: null },
+    { id: 'u-family-dengyi', username: 'dengyi', pw: '123456', role: 'family',
+      display: '邓仪家属', title: null },
     { id: 'u-th-zhou', username: 'zhou', pw: '123456', role: 'therapist',
       display: therapist.name, title: therapist.title },
   ]
@@ -110,8 +115,11 @@ const seed = db.transaction(() => {
          p.functionStatus.swallowing, p.functionStatus.cognition,
          J(p.functionStatus.risks), J(CARE_ALERTS))
 
-  db.prepare(`INSERT INTO patient_goals (patient_id,short_term,next_review_date) VALUES (?,?,?)`)
-    .run(p.id, J(p.goals.shortTerm), p.goals.nextReviewDate)
+  db.prepare(`INSERT INTO patient_goals
+    (patient_id,short_term,next_review_date,plan_status,plan_date,plan_items,plan_source_note)
+    VALUES (?,?,?,'approved',?,?,?)`)
+    .run(p.id, J(p.goals.shortTerm), p.goals.nextReviewDate, PLAN_CONFIRMED_ON,
+      J(taskDefs.map((t) => t.title)), '第一周准备期计划已下发，尚无过往执行记录。')
 
   db.prepare(`INSERT INTO patient_contact
     (patient_id,emergency_name,emergency_relation,emergency_phone,
@@ -119,13 +127,13 @@ const seed = db.transaction(() => {
     .run(p.id, p.emergencyContact.name, p.emergencyContact.relation, p.emergencyContact.phoneMasked,
          p.caregiver.name, p.caregiver.relation, J(p.assistiveDevices), J(p.pastHistory))
 
-  /* 赵福安爷爷：只建立患者索引和空档案骨架，康复计划尚未制定 */
+  /* 赵福安：只建立患者索引和空档案骨架，康复计划尚未制定 */
   const zhaoId = 'p-zhao-grandpa'
   db.prepare(`INSERT INTO patients
     (id,name,gender,age_band,living_situation,psychosocial,communication,avatar,
      primary_therapist_id,origin,status,created_at,updated_at)
     VALUES (?,?,'男','','','','','',?,'synthetic','active',?,?)`)
-    .run(zhaoId, '赵福安爷爷', 'u-th-zhou', now, now)
+    .run(zhaoId, '赵福安', 'u-th-zhou', now, now)
   insMember.run(zhaoId, 'u-th-zhou', '主管康复师', 'primary', now)
   insMember.run(zhaoId, 'u-family-zhao', '本人', 'owner', now)
   db.prepare("INSERT INTO patient_diagnosis (patient_id,stage,comorbidities) VALUES (?,'','[]')").run(zhaoId)
@@ -134,6 +142,52 @@ const seed = db.transaction(() => {
   db.prepare(`INSERT INTO patient_contact
     (patient_id,caregiver_name,caregiver_relation,assistive_devices,past_history)
     VALUES (?,'','','[]','[]')`).run(zhaoId)
+
+  /* 邓仪：虚构病例，完整档案来自用户提供的训练计划，已审核执行 */
+  const d = dengyiPatient
+  db.prepare(`INSERT INTO patients
+    (id,name,gender,age_band,height_cm,weight_kg,address,living_situation,psychosocial,communication,
+     avatar,primary_therapist_id,origin,status,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'active',?,?)`)
+    .run(d.id, d.name, d.gender, d.ageBand, d.heightCm, d.weightKg, d.address,
+         d.livingSituation, d.psychosocial ?? null, d.communication, d.avatar,
+         'u-th-zhou', d.origin, now, now)
+  insMember.run(d.id, 'u-family-dengyi', d.caregiver.relation, 'owner', now)
+  insMember.run(d.id, 'u-th-zhou', '主管康复师', 'primary', now)
+  db.prepare(`INSERT INTO patient_diagnosis
+    (patient_id,stroke_type,onset_date,stage,comorbidities) VALUES (?,?,?,?,?)`)
+    .run(d.id, d.diagnosis.strokeType, d.diagnosis.onsetDate, d.diagnosis.stage,
+         J(d.diagnosis.comorbidities))
+  db.prepare(`INSERT INTO patient_function
+    (patient_id,affected_side,mobility,swallowing,cognition,risks,care_alerts)
+    VALUES (?,?,?,?,?,?,?)`)
+    .run(d.id, d.functionStatus.affectedSide, d.functionStatus.mobility,
+         d.functionStatus.swallowing, d.functionStatus.cognition,
+         J(d.functionStatus.risks), '[]')
+  db.prepare(`INSERT INTO patient_goals
+    (patient_id,short_term,long_term,next_review_date,plan_status,plan_date,plan_items,plan_source_note)
+    VALUES (?,?,?,?,?,?,?,?)`)
+    .run(d.id, J(d.goals.shortTerm), J(d.goals.longTerm), d.goals.nextReviewDate,
+         d.rehabPlan?.status ?? 'none', d.rehabPlan?.plannedOn ?? null,
+         J(d.rehabPlan?.items), d.rehabPlan?.sourceNote ?? null)
+  db.prepare(`INSERT INTO patient_contact
+    (patient_id,caregiver_name,caregiver_relation,assistive_devices,past_history)
+    VALUES (?,?,?,?,?)`)
+    .run(d.id, d.caregiver.name, d.caregiver.relation, J(d.assistiveDevices), J(d.pastHistory))
+
+  const insDengAssessment = db.prepare(`INSERT INTO assessments
+    (id,patient_id,name,value,level,tile_label,tile_value,tile_note,date,assessor,note,visible_to_family,sort_order)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  d.assessments.forEach((a, i) => insDengAssessment.run(
+    `as-${d.id}-${i + 1}`, d.id, a.name, a.value, a.level ?? null,
+    a.tile?.label ?? null, a.tile?.value ?? null, a.tile?.note ?? null,
+    a.date, a.assessor, a.note, a.visibleToFamily ? 1 : 0, i,
+  ))
+  const insDengEvent = db.prepare(`INSERT INTO care_events
+    (id,patient_id,date,kind,title,detail) VALUES (?,?,?,?,?,?)`)
+  d.careEvents.forEach((e, i) => insDengEvent.run(
+    `ce-${d.id}-${i + 1}`, d.id, e.date, e.kind, e.title, e.detail,
+  ))
 
   const insMed = db.prepare(`INSERT INTO medications
     (id,patient_id,name,dose,times,notes,confirmed,sort_order) VALUES (?,?,?,?,?,?,?,?)`)
@@ -187,11 +241,19 @@ const seed = db.transaction(() => {
       t.videoId ?? null, t.reps ?? null, t.durationMin ?? null,
       t.requiresVideoUpload ? 1 : 0, t.origin, PLAN_CONFIRMED_ON, HOMECARE_START)
   }
+  for (const t of dengyiTaskDefs) {
+    insTask.run(t.id, d.id, t.kind, t.title, t.scheduledTime, t.instruction, J(t.cautions),
+      t.videoId ?? null, t.reps ?? null, t.durationMin ?? null,
+      t.requiresVideoUpload ? 1 : 0, t.origin, DENGYI_PLAN_CONFIRMED_ON, DENGYI_HOMECARE_START)
+  }
 
   const insRem = db.prepare(`INSERT INTO reminders
     (id,patient_id,time,text,task_id,highlight,enabled) VALUES (?,?,?,?,?,?,1)`)
   for (const r of DAILY_REMINDERS) {
     insRem.run(r.id, p.id, r.time, r.text, r.taskId ?? null, r.highlight ? 1 : 0)
+  }
+  for (const t of dengyiTaskDefs) {
+    insRem.run(`rem-${t.id}`, d.id, t.scheduledTime, t.title, t.id, t.id === 'dy-task-cognition' ? 1 : 0)
   }
 
   /* ---------- 已完成专业审核的内容 ---------- */
@@ -219,14 +281,45 @@ const seed = db.transaction(() => {
   const today = new Date()
   const insCI = db.prepare(`INSERT INTO check_ins
     (id,patient_id,task_id,date,status,note,at,upload_id) VALUES (?,?,?,?,?,?,?,NULL)`)
-  for (const c of buildHistory(today)) {
+  // 林秀兰处于刚开始康复的第一周，不预置过往打卡。
+  // 邓仪保留一个月连续执行记录，用于展示依从性长期趋势。
+  for (const c of buildHistory(today, DENGYI_HOMECARE_START, d.id, dengyiTaskDefs)) {
     insCI.run(c.id, c.patientId, c.taskId, c.date, c.status, c.note ?? null, c.at ?? null)
   }
 
   const insV = db.prepare(`INSERT INTO vitals
     (id,patient_id,date,time,systolic,diastolic,by,at) VALUES (?,?,?,?,?,?,?,?)`)
-  for (const v of buildVitals(today)) {
+  for (const v of buildVitals(today, d.id)) {
     insV.run(v.id, v.patientId, v.date, v.time, v.systolic, v.diastolic, v.by, v.at)
+  }
+
+  /* ---------- 邓仪的指导、咨询与长期跟进记录 ---------- */
+  const dengGuidances = [
+    ['dy-g-01', '2026-08-13T10:20:00', '手功能训练先从低速、低阻力开始，每次结束后检查右手皮肤和疲劳反应。', 'dy-task-hand'],
+    ['dy-g-02', '2026-08-18T16:10:00', '桥式运动中保持自然呼吸，右膝和右足由照护者协助固定，不追求抬得过高。', 'dy-task-bridge'],
+    ['dy-g-03', '2026-08-26T18:30:00', '认知训练保持“一次一个指令”，完成后立即给予肯定；出现烦躁就暂停。', 'dy-task-cognition'],
+    ['dy-g-04', '2026-09-02T09:40:00', '转移和站立仍需全程保护，轮椅先锁止，严禁患者独自尝试。', 'dy-task-bridge'],
+    ['dy-g-05', '2026-09-08T20:15:00', '右侧感觉减退，每晚继续检查受压部位；发红不退或皮肤破损时及时反馈。', 'dy-task-skin'],
+    ['dy-g-06', '2026-09-13T17:50:00', '复评后按当前节奏继续执行，优先保证动作质量和安全，不自行增加强度。', 'dy-task-hand'],
+  ] as const
+  const insGuidance = db.prepare(`INSERT INTO guidances
+    (id,patient_id,therapist_user_id,therapist_name,text,about_task_id,about_date,read_by_family,read_at,at)
+    VALUES (?,?,'u-th-zhou',?,?,?,?,1,?,?)`)
+  for (const [id, at, text, taskId] of dengGuidances) {
+    insGuidance.run(id, d.id, therapist.name, text, taskId, at.slice(0, 10), at, at)
+  }
+
+  const dengMessages = [
+    ['dy-msg-01', 'family', '今天做桥式运动时有些紧张，需要减量吗？', '2026-08-18T15:40:00'],
+    ['dy-msg-02', 'therapist', '今天先保持3次，每次3秒，保持呼吸平稳；如果仍有不适就停止并联系我们。', '2026-08-18T16:08:00'],
+    ['dy-msg-03', 'family', '她下午有时不愿意做认知训练。', '2026-08-26T18:05:00'],
+    ['dy-msg-04', 'therapist', '可以改用熟悉的老照片或物品，每次只做一个简短指令，抗拒时不强迫。', '2026-08-26T18:28:00'],
+  ] as const
+  const insMessage = db.prepare(`INSERT INTO messages
+    (id,patient_id,role,text,basis,sources,escalated,at,author_user_id)
+    VALUES (?,?,?,?,'[]','[]',0,?,?)`)
+  for (const [id, role, text, at] of dengMessages) {
+    insMessage.run(id, d.id, role, text, at, role === 'therapist' ? 'u-th-zhou' : 'u-family-dengyi')
   }
 
   /* ---------- 知识库集合 ---------- */

@@ -22,6 +22,8 @@ describe('数据库迁移', () => {
       '0001_init.sql',
       '0002_care_alerts.sql',
       '0003_review_audit.sql',
+      '0004_patient_address_and_plan_review.sql',
+      '0005_plan_status_guard.sql',
     ])
   })
 
@@ -51,5 +53,14 @@ describe('数据库迁移', () => {
 
   it('外键约束已开启 —— 否则行级权限可以被脏数据绕过', () => {
     expect(getDb().pragma('foreign_keys', { simple: true })).toBe(1)
+  })
+
+  it('康复计划状态只接受四个合法枚举', () => {
+    const db = getDb()
+    const now = new Date().toISOString()
+    db.prepare(`INSERT INTO patients (id,name,gender,age_band,status,created_at,updated_at)
+      VALUES ('p-plan-guard','计划状态测试','女','','active',?,?)`).run(now, now)
+    expect(() => db.prepare(`INSERT INTO patient_goals (patient_id,plan_status)
+      VALUES ('p-plan-guard','invalid')`).run()).toThrow(/invalid patient_goals\.plan_status/)
   })
 })

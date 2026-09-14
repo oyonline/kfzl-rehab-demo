@@ -27,7 +27,7 @@ export const DAILY_REMINDERS: ReminderDef[] = [
     id: 'rm-bp-morning',
     time: '07:00',
     taskId: 'task-vitals-morning',
-    text: '☀️ 陈阿姨早上好～该给林奶奶量血压啦。量之前记得让奶奶先躺 30 秒、坐 30 秒、再站起来，量完把数值录进来，小安帮您记着。',
+    text: '☀️ 陈阿姨早上好～该给林秀兰量血压啦。量之前记得让她先躺 30 秒、坐 30 秒、再站起来，量完把数值录进来，小安帮您记着。',
   },
   {
     id: 'rm-med',
@@ -73,5 +73,5 @@ export const DAILY_REMINDERS: ReminderDef[] = [
  * 只在今日确实出现过超标记录时才进入提醒列表 —— 不是预先摆在那里的假记录。
  */
 export function abnormalBpReminder(systolic: number, diastolic: number): string {
-  return `⚠️ 林奶奶本次血压为 ${systolic}/${diastolic} mmHg，超出安全范围（90–139 / 60–89）。请让奶奶安静坐下休息，不要自行加药，10 分钟后复测一次。此预警已同步通知康复师，我们会尽快联系您。`
+  return `⚠️ 林秀兰本次血压为 ${systolic}/${diastolic} mmHg，超出安全范围（90–139 / 60–89）。请让她安静坐下休息，不要自行加药，10 分钟后复测一次。此预警已同步通知康复师，我们会尽快联系您。`
 }

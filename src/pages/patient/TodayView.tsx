@@ -23,6 +23,7 @@ export function TodayView() {
 
   const total = rows.length
   const hasPlan = total > 0
+  const hasPastCheckIns = state.checkIns.some((c) => c.date < today)
   const done = rows.filter((r) => r.status === 'done').length
   const remaining = total - done
   const next = rows.find((r) => r.status === 'pending')
@@ -69,10 +70,10 @@ export function TodayView() {
           </div>
         </div>
         <div className="hero-next">
-          <div className="hero-next-k">{hasPlan ? '连续坚持' : '当前状态'}</div>
+          <div className="hero-next-k">{hasPlan ? (hasPastCheckIns ? '连续坚持' : '康复阶段') : '当前状态'}</div>
           <div className="hero-next-v num">
-            {hasPlan ? streak(state.checkIns, total) : '待制定'}
-            {hasPlan && <span style={{ fontSize: 'var(--t-sm)', fontWeight: 500, marginLeft: 4, opacity: .75 }}>天</span>}
+            {hasPlan ? (hasPastCheckIns ? streak(state.checkIns, total) : '刚开始') : '待制定'}
+            {hasPlan && hasPastCheckIns && <span style={{ fontSize: 'var(--t-sm)', fontWeight: 500, marginLeft: 4, opacity: .75 }}>天</span>}
           </div>
         </div>
       </section>

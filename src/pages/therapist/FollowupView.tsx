@@ -51,8 +51,14 @@ export function FollowupView() {
 
         {rows.length === 0 ? (
           <div className="empty-chat">
-            <div className="big">尚未制定康复计划</div>
-            <div>制定计划后，当日训练项目和执行状态会显示在这里</div>
+            <div className="big">
+              {patient.rehabPlan?.status === 'pending' ? '康复计划待专业审核' : '尚未制定康复计划'}
+            </div>
+            <div>
+              {patient.rehabPlan?.status === 'pending'
+                ? '审核通过并下发后，当日训练项目和执行状态会显示在这里'
+                : '制定计划后，当日训练项目和执行状态会显示在这里'}
+            </div>
           </div>
         ) : (
         <table className="tbl">

@@ -114,6 +114,7 @@ export function toPatient(p: any, parts: {
     id: p.id, name: p.name, avatar: p.avatar ?? '', ageBand: p.age_band, gender: p.gender,
     heightCm: p.height_cm, weightKg: p.weight_kg,
     livingSituation: p.living_situation ?? '',
+    address: p.address ?? undefined,
     caregiver: { name: c?.caregiver_name ?? '', relation: c?.caregiver_relation ?? '' },
     diagnosis: {
       strokeType: d?.stroke_type ?? '', onsetDate: d?.onset_date ?? '',
@@ -134,7 +135,14 @@ export function toPatient(p: any, parts: {
       date: a.date, assessor: a.assessor ?? '', note: a.note ?? '',
       visibleToFamily: a.visible_to_family === 1,
     })),
-    goals: { shortTerm: JJ(g?.short_term), nextReviewDate: g?.next_review_date ?? '' },
+    goals: {
+      shortTerm: JJ(g?.short_term), longTerm: JJ(g?.long_term),
+      nextReviewDate: g?.next_review_date ?? '',
+    },
+    rehabPlan: g?.plan_status && g.plan_status !== 'none' ? {
+      status: g.plan_status, plannedOn: g.plan_date ?? '', items: JJ(g.plan_items),
+      sourceNote: g.plan_source_note ?? '',
+    } : undefined,
     admission: parts.admission ? {
       admittedOn: parts.admission.admitted_on, dischargedOn: parts.admission.discharged_on,
       facility: parts.admission.facility, department: parts.admission.department,

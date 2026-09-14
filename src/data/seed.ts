@@ -25,7 +25,7 @@ export const SUPPORT_PHONE = '400-000-0000'
 
 export const patient: Patient = {
   id: PATIENT_ID,
-  name: '林奶奶',
+  name: '林秀兰',
   avatar: '',
   ageBand: '82 岁',
   gender: '女',
@@ -144,7 +144,7 @@ export const patient: Patient = {
     { date: '2024-07-07', kind: 'admission', title: '发病入院', detail: '突发左侧肢体无力伴行走不稳，收入神经内科。' },
     { date: '2024-07-21', kind: 'discharge', title: '出院', detail: '病情稳定出院，左侧肢体仍遗留功能障碍，转门诊与居家康复。' },
     { date: '2026-07-07', kind: 'assessment', title: '居家康复首次入户评估', detail: '康复师小婷、小周与康复护士小彭上门，完成 MMSE、洼田饮水试验、MMT 与 Braden 四项评估，并记录睡眠、心理与饮食情况。' },
-    { date: '2026-08-27', kind: 'homecare', title: '个体化康复训练计划制定', detail: '银康安馨居家康复服务团队据评估结果制定三阶段训练方案：准备期放松降张力、强化期抗阻、步态实用期矫正尖足。' },
+    { date: '2026-09-14', kind: 'homecare', title: '个体化康复训练计划启动', detail: '银康安馨居家康复服务团队据已有评估结果下发第一周准备期训练方案，当日开始执行。' },
     { date: '2026-09-27', kind: 'upcoming', title: '下次复评', detail: '评估左下肢肌力、MMSE 与洼田分级改善情况，据此调整下一阶段计划。' },
   ],
 
@@ -158,7 +158,7 @@ export const patient: Patient = {
 }
 
 /** 康复师确认训练计划的日期 —— 依据展示引用它，不要再借用某张量表的日期 */
-export const PLAN_CONFIRMED_ON: ISODate = '2026-08-27'
+export const PLAN_CONFIRMED_ON: ISODate = '2026-09-14'
 
 /**
  * 主责康复师。甲方《个体化康复训练计划表》「康复团队分工」：
@@ -282,7 +282,7 @@ export const TODAY_TASK_COUNT = taskDefs.length
  * 其余仅呈现服务规模，不可点开 —— 不为演示编造第二份病例。
  */
 export const roster: RosterEntry[] = [
-  { id: PATIENT_ID, name: '林奶奶', gender: '女', ageBand: '82 岁', stage: '居家康复·准备期', todayDone: 0, todayTotal: TODAY_TASK_COUNT },
+  { id: PATIENT_ID, name: '林秀兰', gender: '女', ageBand: '82 岁', stage: '居家康复·准备期', todayDone: 0, todayTotal: TODAY_TASK_COUNT },
   { id: 'p-002', name: '周德海', gender: '男', ageBand: '78 岁', stage: '居家康复第 2 阶段', todayDone: 3, todayTotal: 3 },
   { id: 'p-003', name: '孙玉兰', gender: '女', ageBand: '81 岁', stage: '居家康复第 4 阶段', todayDone: 2, todayTotal: 4, flag: '连续 2 天未完成' },
   { id: 'p-004', name: '马长顺', gender: '男', ageBand: '73 岁', stage: '居家康复第 1 阶段', todayDone: 5, todayTotal: 5 },
@@ -359,7 +359,7 @@ export const VIDEO_CATEGORIES = ['吞咽康复类', '肢体康复类', '认知�
 /* ---------- 历史打卡：为打卡日历提供演示数据 ---------- */
 
 /** 居家康复建档日（首次入户评估日）—— 打卡历史与日历可翻阅范围的起点 */
-export const HOMECARE_START: ISODate = '2026-07-07'
+export const HOMECARE_START: ISODate = '2026-09-14'
 
 export function toISODate(d: Date): ISODate {
   const y = d.getFullYear()
@@ -377,7 +377,12 @@ export function toISODate(d: Date): ISODate {
  * 用固定模式而非随机数，保证每次演示看到的日历完全一致，可反复排练。
  * 模式按距今天数取模：每 7 天缺 1 项，每 11 天缺 2 项，其余全完成。
  */
-export function buildHistory(today: Date, fromISO: ISODate = HOMECARE_START): CheckIn[] {
+export function buildHistory(
+  today: Date,
+  fromISO: ISODate = HOMECARE_START,
+  patientId = PATIENT_ID,
+  tasks: TaskDef[] = taskDefs,
+): CheckIn[] {
   const out: CheckIn[] = []
   const from = new Date(fromISO)
   const cursor = new Date(from)
@@ -388,11 +393,11 @@ export function buildHistory(today: Date, fromISO: ISODate = HOMECARE_START): Ch
     const date = toISODate(cursor)
     const back = Math.round((today.getTime() - cursor.getTime()) / 86400000)
     const missCount = back % 11 === 0 ? 2 : back % 7 === 0 ? 1 : 0
-    taskDefs.forEach((t, idx) => {
-      const missed = idx >= taskDefs.length - missCount
+    tasks.forEach((t, idx) => {
+      const missed = idx >= tasks.length - missCount
       out.push({
         id: `ci-${date}-${t.id}`,
-        patientId: PATIENT_ID,
+        patientId,
         taskId: t.id,
         date,
         status: missed ? 'missed' : 'done',
@@ -425,7 +430,7 @@ export function isBpAbnormal(v: { systolic: number; diastolic: number }): boolea
  * 全部在安全范围内：超标那一条留给现场当场录入，才有「录入 → 预警」的过程。
  * 09:00 那条是康复护士小彭训练前测的 112/70，与评估表一致。
  */
-export function buildVitals(today: Date): VitalRecord[] {
+export function buildVitals(today: Date, patientId = PATIENT_ID): VitalRecord[] {
   const out: VitalRecord[] = []
   const plan: Array<[number, string, number, number, VitalRecord['by']]> = [
     [3, '07:10', 126, 78, '家属'],
@@ -443,7 +448,7 @@ export function buildVitals(today: Date): VitalRecord[] {
     const date = toISODate(d)
     out.push({
       id: `vital-${date}-${time.replace(':', '')}`,
-      patientId: PATIENT_ID,
+      patientId,
       date,
       time,
       systolic,

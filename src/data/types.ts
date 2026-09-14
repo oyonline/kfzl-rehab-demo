@@ -100,6 +100,7 @@ export interface Patient {
   heightCm: number
   weightKg: number
   livingSituation: string
+  address?: string
   caregiver: Caregiver
   diagnosis: {
     strokeType: string
@@ -124,7 +125,14 @@ export interface Patient {
   assessments: Assessment[]
   goals: {
     shortTerm: string[]
+    longTerm?: string[]
     nextReviewDate: ISODate
+  }
+  rehabPlan?: {
+    status: 'pending' | 'approved' | 'rejected'
+    plannedOn: ISODate
+    items: string[]
+    sourceNote: string
   }
   /**
    * 入院与出院记录。
