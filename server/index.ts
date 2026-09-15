@@ -17,14 +17,14 @@ const PROJECT_ROOT = join(__dirname, '..')
 
 const app = express()
 /**
- * 默认 5099，与 vite.config.ts 的 /api 代理目标一致 —— 开发时
- * `pnpm server` + `pnpm dev` 直接就能对上，不必再手动带 PORT=5099。
+ * 默认 5100，与 vite.config.ts 的 /api 代理目标一致 —— 开发时
+ * `pnpm server` + `pnpm dev` 直接就能对上。该端口与“工作站_养老”的 5099 分开。
  *
  * 不用 5000 的两个原因：macOS 的 AirPlay 接收器占着它；且 .preview 已把
  * 5000 分给 Vite。部署走 scripts/run.sh，那里显式 export PORT=5000
  * （单进程同时托管 dist 与 /api），不受本默认值影响。
  */
-const PORT = Number(process.env.PORT ?? 5099)
+const PORT = Number(process.env.PORT ?? 5100)
 
 /**
  * AI 开关 —— 一个仓两种跑法的分界点。

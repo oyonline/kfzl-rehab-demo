@@ -173,7 +173,7 @@ requirePatientAccess   行级权限：查 patient_members，无记录即 403
 
 | 环境变量 | 作用 | 默认 |
 |---|---|---|
-| `PORT` | 服务端口 | 5099（与 Vite 代理对齐）；部署由 `run.sh` 显式设 5000 |
+| `PORT` | 服务端口 | 5100（与 Vite 代理对齐，避开养老项目 5099）；部署由 `run.sh` 显式设 5000 |
 | `DB_PATH` | 数据库位置 | 项目 `data/`；目录只读时退 `/tmp` |
 | `JWT_SECRET` | 令牌密钥 | 未设则落盘持久化，避免重启掉登录态 |
 | `AI_ENABLED` | AI 开关 | 检测到扣子容器密钥则开，否则关 |
@@ -186,8 +186,9 @@ requirePatientAccess   行级权限：查 patient_members，无记录即 403
 
 ## 九、部署形态
 
-**开发**：两个进程。Vite（5173）提供前端，Express（5099）提供 `/api`，
+**开发**：两个进程。Vite（5175）提供前端，Express（5100）提供 `/api`，
 Vite 代理转发，浏览器看到的是同源。
+本地与 `工作站_养老`（Vite 5174 / Express 5099）并行时不共用端口。
 
 **部署**：单进程。`build.sh` 构建产物，`run.sh` 起 Express，
 由它同时托管 `dist/` 与 `/api`，天然同源。

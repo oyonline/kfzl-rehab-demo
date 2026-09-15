@@ -62,7 +62,7 @@ server/
   seed/run.ts           种子数据
 scripts/
   dev-build.sh          预览 build（安装依赖）
-  dev-run.sh            预览 run（同进程组先起 Express 5099 再 exec Vite）
+  dev-run.sh            预览 run（同进程组先起 Express 5100 再 exec Vite）
   build.sh              部署 build（Vite 构建产物）
   run.sh                部署 run（起 Express）
 ```
@@ -105,13 +105,13 @@ scripts/
 **开发需要同时起两个进程**：
 
 ```
-pnpm server     # Express，提供 /api，默认 5099
-pnpm dev        # Vite，5173，把 /api 代理到 5099
+pnpm server     # Express，提供 /api，默认 5100
+pnpm dev        # Vite，5175，把 /api 代理到 5100
 ```
 
-两个默认值已对齐（2026-08-31 修）。此前 server 默认 5000、Vite 代理默认 5099，
-对不上，直接 `pnpm server` 会让所有接口请求连不上。不用 5000 是因为 macOS
-AirPlay 占着它，且 `.preview` 把 5000 分给了 Vite。
+两个默认值已对齐。KFZL 本地固定使用 5175/5100，与 `工作站_养老`
+的 5174/5099 分开；不要交叉使用。不用 5000 是因为 macOS AirPlay 可能占用它，
+且 `.preview` 的受管预览端口与日常本地开发端口是两套运行方式。
 
 - 预览：`scripts/dev-build.sh` + `scripts/dev-run.sh`（端口从 `.preview` 读取，`expose_port = 5000`）。
   dev-run 现在会**同时拉起后端**：`PORT=API_PORT pnpm run server`（后台，日志 /tmp/preview-server.log）
