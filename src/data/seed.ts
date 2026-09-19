@@ -321,7 +321,7 @@ export const videos: VideoAsset[] = [
     target: '左下肢肌力 4 级、踝周肌张力增高的偏瘫老人',
     goal: '放松左下肢、降低肌张力、维持踝关节活动度',
     cautions: ['力度以有酸胀感为宜，不产生疼痛', '全程须有人在旁保护', '头晕或明显疲劳立即停止'],
-    durationSec: 135,
+    durationSec: 102,
     origin: 'team_reviewed',
   },
   {
@@ -338,10 +338,10 @@ export const videos: VideoAsset[] = [
   { id: 'v-feed-water',   title: '喂水技巧',       category: '吞咽康复类',   src: '/videos/v-feed-water.mp4',   durationSec: 61,  origin: 'team_reviewed' },
   { id: 'v-feed-food',    title: '喂食技巧',       category: '吞咽康复类',   src: '/videos/v-feed-food.mp4',    durationSec: 54,  origin: 'team_reviewed' },
   { id: 'v-joint',        title: '关节活动',       category: '肢体康复类',   src: '/videos/v-joint.mp4',        durationSec: 69,  origin: 'team_reviewed' },
-  { id: 'v-dress',        title: '穿脱衣物',       category: '肢体康复类',   src: '/videos/v-dress.mp4',        durationSec: 109, origin: 'team_reviewed' },
-  { id: 'v-posture',      title: '良肢位摆放',     category: '日常护理类',   src: '/videos/v-posture.mp4',      durationSec: 82,  origin: 'team_reviewed' },
-  { id: 'v-bp',           title: '血压监测',       category: '日常护理类',   src: '/videos/v-bp.mp4',           durationSec: 172, origin: 'team_reviewed' },
-  { id: 'v-walker',       title: '助行器行走',     category: '康复辅具类',   src: '/videos/v-walker.mp4',       durationSec: 171, origin: 'team_reviewed' },
+  { id: 'v-dress',        title: '穿脱衣物',       category: '肢体康复类',   src: '/videos/v-dress.mp4',        durationSec: 226, origin: 'team_reviewed' },
+  { id: 'v-posture',      title: '良肢位摆放',     category: '日常护理类',   src: '/videos/v-posture.mp4',      durationSec: 77,  origin: 'team_reviewed' },
+  { id: 'v-bp',           title: '血压监测',       category: '日常护理类',   src: '/videos/v-bp.mp4',           durationSec: 188, origin: 'team_reviewed' },
+  { id: 'v-walker',       title: '助行器行走',     category: '康复辅具类',   src: '/videos/v-walker.mp4',       durationSec: 63,  origin: 'team_reviewed' },
   { id: 'v-bandage',      title: '康复辅具绷带使用', category: '康复辅具类', src: '/videos/v-bandage.mp4',      durationSec: 82,  origin: 'team_reviewed' },
   { id: 'v-vr',           title: 'VR 训练',        category: '认知训练类',   src: '/videos/v-vr.mp4',           durationSec: 161, origin: 'team_reviewed' },
   { id: 'v-attention',    title: '注意力训练',     category: '认知训练类',   src: '/videos/v-attention.mp4',    durationSec: 73,  origin: 'team_reviewed' },
@@ -349,6 +349,7 @@ export const videos: VideoAsset[] = [
   { id: 'v-head-massage', title: '头部按摩',       category: '中医适宜技术', src: '/videos/v-head-massage.mp4', durationSec: 307, origin: 'team_reviewed' },
   { id: 'v-acupoint',     title: '穴位按摩',       category: '中医适宜技术', src: '/videos/v-acupoint.mp4',     durationSec: 88,  origin: 'team_reviewed' },
   { id: 'v-drum',         title: '空灵鼓教学',     category: '中医适宜技术', src: '/videos/v-drum.mp4',         durationSec: 60,  origin: 'team_reviewed' },
+  { id: 'v-fall',         title: '处理跌倒',       category: '日常护理类',   src: '/videos/v-fall.mp4',         durationSec: 64,  origin: 'team_reviewed' },
 ]
 
 /** 视频库分组顺序 —— 与甲方交付的文件夹结构一致 */
