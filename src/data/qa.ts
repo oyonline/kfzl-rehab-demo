@@ -37,6 +37,8 @@ export interface PresetQA {
   /** 是否建议转康复师 */
   escalate: boolean
   escalateHint?: string
+  /** 关联的训练演示视频 —— 命中该问答时，答复卡片上出现「播放视频」入口 */
+  videoId?: string
 }
 
 export const PRESET_QA: PresetQA[] = [

@@ -21,8 +21,8 @@ export function matchPatientQa(input: string, presets: PresetQA[]): PresetQA | n
 /** 专属问答只引用已有档案和计划，不生成剂量、分值或新诊断。 */
 const qa = (
   id: string, question: string, matchTerms: string[][], basis: string[], external: string[], answer: string[],
-  escalate = false, escalateHint?: string,
-): PresetQA => ({ id, question, matchTerms, basis, external, answer, escalate, escalateHint })
+  escalate = false, escalateHint?: string, videoId?: string,
+): PresetQA => ({ id, question, matchTerms, basis, external, answer, escalate, escalateHint, videoId })
 
 export const DENGYI_QA: PresetQA[] = [
   qa('dy-hand', '手功能机器人训练时她说手不舒服，怎么办？',
@@ -53,6 +53,10 @@ export const DENGYI_QA: PresetQA[] = [
     [['皮肤', '发红'], ['受压', '红']], ['邓仪的晚间皮肤检查任务'],
     ['活动受限时应定期观察容易受压部位；持续发红、破损或局部温度改变需要及时反馈。', '皮肤观察以真实记录为主，不应自行涂抹来源不明的药物处理。'],
     ['先解除该部位持续受压，让邓仪保持安全、舒适的体位。', '记录发红部位、发现时间、范围以及解除受压后是否逐渐减轻；不要反复用力揉搓。', '继续按照既定照护计划完成体位调整和皮肤观察，不自行使用药物或敷料。', '发红持续不退、出现水疱、破损、渗液或疼痛明显时，请联系康复师或医护人员。'], true, '持续发红或皮肤破损需专业人员评估'),
+  qa('dy-lower-limb', '下肢康复训练具体该怎么做？',
+    [['下肢', '训练'], ['下肢', '康复'], ['下肢', '怎么做'], ['腿', '锻炼']], ['邓仪的桥式运动计划', '下肢康复训练视频'],
+    ['下肢训练应循序渐进，动作以能够稳定、完整完成为准，训练中保持自然呼吸、避免屏气，也不要借腰部猛然发力代替下肢发劲。', '训练应由家属或照护者在旁保护；出现头晕、心慌、明显疲劳或不适立即停止。'],
+    ['邓仪的下肢训练以桥式运动为主，按今日安排里的次数和时长执行即可。', '想要复习标准动作，可以点击下方「播放训练视频」查看完整演示，对照着做更容易到位。'], false, undefined, 'v-balance'),
 ]
 
 export const LIN_XIULAN_STARTER_QA: PresetQA[] = [

@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FALLBACK_ANSWER, type PresetQA } from '../../data/qa'
-import type { Patient, TaskDef, Therapist } from '../../data/types'
+import type { Patient, TaskDef, Therapist, VideoAsset } from '../../data/types'
 import { usePatientData } from '../../data/context'
 import {
   matchPatientQa,
   patientQaForId,
   patientQuestionExampleForId,
 } from '../../data/patientQa'
+import { videos } from '../../data/seed'
 import { addMessage, createEscalation, useDemoState } from '../../store/store'
 import { authFetch } from '../../auth/auth'
-import { IconChat, IconSend, IconUser } from '../../components/Icons'
+import { IconChat, IconClose, IconPlay, IconSend, IconUser } from '../../components/Icons'
 import { InlineRich } from '../../components/RichText'
 import { ThinkingTrace, useTypewriter, type TraceStep } from '../../components/ThinkingTrace'
 
@@ -298,6 +299,8 @@ export function ChatView() {
   // 模型首字返回前界面必须有东西：依据动画走完就消失，而首 token 要等数秒，
   // 中间全空白——等模型回复期间显示思考占位，首个字到达后切打字机
   const [waitingLLM, setWaitingLLM] = useState(false)
+  // 剧中播放下肢训练视频的弹窗（只对各条预审问答里显式关联 videoId 的那张卡片出现）
+  const [playing, setPlaying] = useState<VideoAsset | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const messages = state.messages
 
@@ -482,6 +485,7 @@ export function ChatView() {
           const isTherapist = m.role === 'therapist'
           const q = PRESET_QA.find((x) => x.answer.join('\n') === m.text)
           const hint = q?.escalateHint ?? patientFallback.escalateHint
+          const video = q?.videoId ? videos.find((v) => v.id === q.videoId) : undefined
           return (
             <div className="bub-row" data-me={isMe} key={m.id}>
               {/* 必须一眼分清 AI 与康复师：产品主张是 AI 不取代专业人员，
@@ -518,6 +522,13 @@ export function ChatView() {
                 ) : m.id === streamingId
                   ? <StreamingBody text={m.text} onDone={() => setStreamingId(null)} />
                   : m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
+
+                {!isMe && m.id !== streamingId && video && (
+                  <button className="chat-video-btn" onClick={() => setPlaying(video)}>
+                    <IconPlay size={14} /> 播放训练视频
+                    {video.durationSec ? ` · 约 ${Math.max(1, Math.round(video.durationSec / 60))} 分钟` : ''}
+                  </button>
+                )}
 
                 {!isMe && m.basis && m.id !== streamingId && (
                   <div className="basis">
@@ -633,6 +644,27 @@ export function ChatView() {
           <span className="card-note">复杂问题会转交 {therapist.name} 康复师</span>
         </div>
       </div>
+
+      {playing && (
+        <div className="video-mask" onClick={() => setPlaying(null)}>
+          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="video-modal-hd">
+              <div>
+                <div className="video-modal-title">{playing.title}</div>
+                <div className="video-modal-sub">
+                  {playing.category}
+                  {playing.goal ? ` · ${playing.goal}` : ''}
+                  {playing.durationSec ? ` · 约 ${Math.max(1, Math.round(playing.durationSec / 60))} 分钟` : ''}
+                </div>
+              </div>
+              <button className="btn-quiet" onClick={() => setPlaying(null)}><IconClose size={14} /> 关闭</button>
+            </div>
+            <div className="stage">
+              <video className="stage-v" src={playing.src} controls autoPlay preload="metadata" />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -487,6 +487,44 @@
 .empty-chat { text-align: center; padding: 34px 0 26px; color: var(--ink-3); }
 .empty-chat .big { font-size: var(--t-md); color: var(--ink-2); font-weight: 600; margin-bottom: 5px; }
 
+/* 答复卡片上的「播放训练视频」入口 */
+.chat-video-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 12px; padding: 7px 13px;
+  border: 1px solid var(--teal-600); border-radius: var(--r);
+  background: var(--teal-50); color: var(--teal-700);
+  font-size: var(--t-sm); font-weight: 600; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.chat-video-btn:hover { background: var(--teal-100); border-color: var(--teal-700); }
+
+/* 视频播放弹层 —— 复用抽屉的淡入遮罩，播放下肢康复训练等演示视频 */
+.video-mask {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(20, 26, 24, .4);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: fade .2s ease;
+}
+.video-modal {
+  width: min(860px, 100%);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 60px -24px rgba(20, 26, 24, .4);
+  overflow: hidden;
+  animation: pop .22s cubic-bezier(.2, .8, .2, 1);
+}
+.video-modal-hd {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.video-modal-title { font-size: var(--t-md); font-weight: 650; color: var(--ink); }
+.video-modal-sub { font-size: var(--t-xs); color: var(--ink-3); margin-top: 3px; }
+
 /* ---------------- 打卡日历 ---------------- */
 
 .cal-hd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 8px; }
