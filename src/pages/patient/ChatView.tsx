@@ -524,9 +524,15 @@ export function ChatView() {
                   : m.text.split('\n').map((line, i) => <RichText key={i} text={line} />)}
 
                 {!isMe && m.id !== streamingId && video && (
-                  <button className="chat-video-btn" onClick={() => setPlaying(video)}>
-                    <IconPlay size={14} /> 播放训练视频
-                    {video.durationSec ? ` · 约 ${Math.max(1, Math.round(video.durationSec / 60))} 分钟` : ''}
+                  <button className="chat-video-card" onClick={() => setPlaying(video)}>
+                    <span className="chat-video-thumb">
+                      <img src={`/posters/${video.id}.jpg`} alt="" loading="lazy" />
+                      <span className="chat-video-play"><IconPlay size={20} /></span>
+                    </span>
+                    <span className="chat-video-meta">
+                      <IconPlay size={13} /> 播放训练视频
+                      {video.durationSec ? ` · 约 ${Math.max(1, Math.round(video.durationSec / 60))} 分钟` : ''}
+                    </span>
                   </button>
                 )}
 
