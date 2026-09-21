@@ -380,19 +380,6 @@ const seed = db.transaction(() => {
     })
   }
 
-  const dengMessages = [
-    ['dy-msg-01', 'family', '今天做桥式运动时有些紧张，需要减量吗？', '2026-08-18T15:40:00'],
-    ['dy-msg-02', 'therapist', '今天先保持3次，每次3秒，保持呼吸平稳；如果仍有不适就停止并联系我们。', '2026-08-18T16:08:00'],
-    ['dy-msg-03', 'family', '她下午有时不愿意做认知训练。', '2026-08-26T18:05:00'],
-    ['dy-msg-04', 'therapist', '可以改用熟悉的老照片或物品，每次只做一个简短指令，抗拒时不强迫。', '2026-08-26T18:28:00'],
-  ] as const
-  const insMessage = db.prepare(`INSERT INTO messages
-    (id,patient_id,role,text,basis,sources,escalated,at,author_user_id)
-    VALUES (?,?,?,?,'[]','[]',0,?,?)`)
-  for (const [id, role, text, at] of dengMessages) {
-    insMessage.run(id, d.id, role, text, at, role === 'therapist' ? 'u-th-zhou' : 'u-family-dengyi')
-  }
-
   /* ---------- 知识库集合 ---------- */
   // OR IGNORE：集合的 enabled 与 disclaimer 是运维可调的状态
   // （政策集合的开关就是用户裁决过的），重灌演示数据不该把它们冲回默认值。
